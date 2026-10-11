@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>מפעל האפליקציות</title>
+<style>
+:root{--bg:#eef1f6;--card:#fff;--ink:#1d2433;--mut:#5d687c;--line:#d3d9e4;--acc:#1f6f5c;--err:#b3261e;--warn:#8a5a00}
+@media(prefers-color-scheme:dark){:root{--bg:#141922;--card:#1c2330;--ink:#e8ecf3;--mut:#9aa6ba;--line:#2e394b;--acc:#4fbf9f;--err:#ff8a80;--warn:#f0c060}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,"Segoe UI",Arial,sans-serif}
+main{max-width:640px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:28px;margin:8px 0 4px}
+.sub{color:var(--mut);margin:0 0 20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px}
+label{display:block;font-weight:600;margin:14px 0 4px}
+input,select,textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+textarea{min-height:130px;resize:vertical}
+.row{display:flex;gap:12px}.row>div{flex:1}
+.hint a{color:var(--acc);font-weight:600}
+.hint{font-size:13px;color:var(--mut);margin:4px 0 0}
+.chk{display:flex;align-items:center;gap:8px;margin-top:14px;font-weight:400}
+.chk input{width:auto}
+button{margin-top:18px;width:100%;padding:12px;border:0;border-radius:6px;background:var(--acc);color:#fff;font:600 17px inherit;cursor:pointer}
+button.sec{background:transparent;color:var(--acc);border:1px solid var(--acc);margin-top:16px;padding:8px;font-size:15px}
+button:disabled{opacity:.5;cursor:wait}
+#log{margin-top:18px;font-size:14px}
+#log div{padding:4px 0;border-bottom:1px solid var(--line)}
+.w{color:var(--warn)}.e{color:var(--err);font-weight:600}.ok{color:var(--acc);font-weight:600}
+#result a{display:block;margin-top:14px;padding:14px;border-radius:8px;background:var(--acc);color:#fff;text-align:center;font-weight:700;text-decoration:none;word-break:break-all}
+</style>
+</head>
+<body>
+<main>
+<h1>מפעל האפליקציות</h1>
+<p class="sub">מתארים אפליקציה, והאתר כותב אותה, בונה אותה בגיטהב ומוריד לך את הקובץ המוכן (APK או ZIP). אם הבנייה נכשלת, הלוג נשלח אוטומטית למודל לתיקון. הכול רץ בדפדפן שלך.</p>
+<div class="card">
+<label for="prov">מודל שכותב את הקוד</label>
+<select id="prov"><option value="gemini">Gemini של גוגל (חינמי)</option><option value="anthropic">Claude של Anthropic (בתשלום)</option></select>
+<label for="ai" id="ailab">מפתח API</label>
+<input id="ai" type="password" autocomplete="off">
+<p class="hint"><a id="ailink" href="#" target="_blank" rel="noopener">להוצאת מפתח API</a> <span id="aihint"></span></p>
+<label for="gh">אסימון גיטהב (Classic)</label>
+<input id="gh" type="password" autocomplete="off" placeholder="ghp_...">
+<p class="hint"><a href="https://github.com/settings/tokens/new?scopes=repo,workflow&amp;description=App%20Factory" target="_blank" rel="noopener">להוצאת אסימון</a> (ההרשאות כבר מסומנות, נשאר ללחוץ Generate token ולהעתיק)</p>
+<p class="hint">צריך אסימון Classic עם ההרשאות <b>repo</b> ו-<b>workflow</b>. הריפו שנוצר ציבורי. המפתחות נשלחים רק לספק המודל ול-GitHub.</p>
+<button type="button" id="help" class="sec" aria-expanded="false" aria-controls="helpbox">הסתבכתם בהוצאת המפתח?</button>
+<p class="hint" id="helpbox" hidden><a href="https://mitmachim.top/post/1207480" target="_blank" rel="noopener">יש מדריך</a> מפורט להוצאת המפתח והאסימון.</p>
+<div class="row">
+<div><label for="type">סוג</label><select id="type"><option value="android">אפליקציית אנדרואיד (APK)</option><option value="web">אתר</option></select></div>
+<div><label for="model">שם המודל</label><input id="model" list="models"><datalist id="models"><option value="gemini-flash-latest"><option value="gemini-3.5-flash"><option value="gemini-2.5-flash"><option value="claude-sonnet-5-5"><option value="claude-opus-5-5"><option value="claude-haiku-5-5"></datalist></div>
+</div>
+<label for="desc">מה לבנות?</label>
+<textarea id="desc" placeholder="למשל: מחשבון טיפים עם חלוקה בין חברים"></textarea>
+<label for="tries">מספר ניסיונות תיקון אוטומטי (אנדרואיד)</label>
+<input id="tries" type="number" min="1" max="8" value="5">
+<label class="chk"><input id="rem" type="checkbox">זכור את המפתחות במכשיר הזה</label>
+<button id="go">בנה לי</button>
+</div>
+<div id="log"></div>
+<div id="result"></div>
+</main>
+<script>
+(function(){
+'use strict';
+var $=function(id){return document.getElementById(id)};
+var sleep=function(ms){return new Promise(function(r){setTimeout(r,ms)})};
+var aiKey='',ghTok='',model='',prov='gemini';
+var PV={gemini:{lab:'מפתח API של Gemini',link:'https://aistudio.google.com/apikey',note:'(חינמי, בלי כרטיס אשראי. במסלול החינמי גוגל עשויה להשתמש בתוכן לשיפור המודלים)',model:'gemini-flash-latest',ph:'AIza...'},
+anthropic:{lab:'מפתח API של Anthropic',link:'https://console.anthropic.com/settings/keys',note:'(בתשלום: צריך חשבון עם אשראי בקונסולה)',model:'claude-sonnet-5-5',ph:'sk-ant-...'}};
+function applyProv(){var v=PV[$('prov').value];$('ailab').textContent=v.lab;$('ailink').href=v.link;$('aihint').textContent=v.note;$('ai').placeholder=v.ph;$('model').value=v.model}
+
+var WF=['name: Build','on: [push]','permissions:','  contents: write','  issues: write','jobs:','  build:','    runs-on: ubuntu-latest','    steps:',
+'      - uses: actions/checkout@v4','      - uses: actions/setup-java@v4','        with:','          distribution: temurin','          java-version: "17"',
+'      - uses: gradle/actions/setup-gradle@v4','        with:','          gradle-version: "8.9"',
+'      - name: Build','        id: build','        continue-on-error: true','        run: gradle assembleDebug --no-daemon --console=plain > build.log 2>&1',
+'      - name: Report failure',"        if: steps.build.outcome == 'failure'",'        env:','          GH_TOKEN: ${{ github.token }}','        run: |',
+'          { grep -E -A3 "error:|AAPT|wrong" build.log | head -n 120 || true; echo "-----"; tail -n 30 build.log; } > report.txt',
+'          gh issue create --title "build-failed ${{ github.sha }}" --body-file report.txt','          exit 1',
+'      - name: Release',"        if: steps.build.outcome == 'success'",'        env:','          GH_TOKEN: ${{ github.token }}',
+'        run: gh release create "v${{ github.run_number }}" app/build/outputs/apk/debug/app-debug.apk --title "APK v${{ github.run_number }}" --notes "Debug APK"'];
+var SC={
+'settings.gradle':"pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }\ndependencyResolutionManagement { repositories { google(); mavenCentral() } }\nrootProject.name = 'GeneratedApp'\ninclude ':app'\n",
+'build.gradle':"plugins { id 'com.android.application' version '8.5.2' apply false }\n",
+'gradle.properties':'org.gradle.jvmargs=-Xmx3g\nandroid.useAndroidX=false\n',
+'app/build.gradle':["plugins { id 'com.android.application' }","android {","  namespace 'com.generated.app'","  compileSdk 34",
+"  defaultConfig { applicationId 'com.generated.app'; minSdk 21; targetSdk 34; versionCode 1; versionName '1.0' }",
+"  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }","}",""].join('\n'),
+'.github/workflows/build.yml':WF.join('\n')+'\n'};
+
+var FMT='Output ONLY file blocks, no explanations and no markdown fences. First line: "=====NAME: short-english-kebab-name=====". Then for every file a line "=====FILE: relative/path=====" followed by the complete file content.';
+var SYS={
+android:'You are a senior Android engineer. Write a complete, compilable Android app in Java for the request. HARD RULES: Java only (no Kotlin). Only the Android framework: no AndroidX, AppCompat, Material or third-party libraries. Activities extend android.app.Activity; build the UI in code or layout XML. All Java files are in package com.generated.app under app/src/main/java/com/generated/app/ with a launcher activity MainActivity. Write only files under app/src/main/: AndroidManifest.xml (no package attribute, no android:icon, MainActivity with android:exported="true" and MAIN/LAUNCHER, android:label="@string/app_name", theme @android:style/Theme.Material.Light.NoActionBar), res/values/strings.xml (app_name in the language of the request), layouts and XML drawables. Never write gradle files or workflows. minSdk 21, compileSdk 34: avoid newer APIs unless guarded. Declare needed permissions. Before answering, verify every import, every referenced id/resource and every brace. '+FMT,
+web:'You are a senior web developer. Write a complete static website/app for the request: index.html at the root plus optional css/js files with relative paths. Plain HTML/CSS/JS, no build step, no server; external libraries only from https://cdnjs.cloudflare.com. Works on mobile and desktop; RTL when the request is in Hebrew. Verify mentally that there are no errors. '+FMT};
+
+function log(t,c){var d=document.createElement('div');d.textContent=t;if(c)d.className=c;$('log').appendChild(d)}
+function ser(f){return Object.keys(f).map(function(k){return '=====FILE: '+k+'=====\n'+f[k]}).join('\n')}
+
+function parse(t){
+  var files={},name='',nm=t.match(/^=====NAME:\s*(.+?)\s*=====\s*$/m);if(nm)name=nm[1];
+  var re=/^=====FILE:\s*(.+?)\s*=====\s*$/gm,ms=[],m;
+  while((m=re.exec(t))!==null)ms.push(m);
+  ms.forEach(function(x,i){
+    var c=t.slice(x.index+x[0].length,i+1<ms.length?ms[i+1].index:t.length).replace(/^\r?\n/,'');
+    var tick=String.fromCharCode(96),f=c.match(new RegExp('^'+tick.repeat(3)+'[^\\n]*\\n([\\s\\S]*?)\\n'+tick.repeat(3)+'\\s*$'));if(f)c=f[1];
+    files[x[1]]=c.replace(/\s+$/,'')+'\n';
+  });
+  return {name:name,files:files};
+}
+function clean(files,type){
+  var out={};
+  Object.keys(files).forEach(function(k){
+    var p=k.replace(/\\/g,'/').replace(/^\/+/,'').replace(/^\.\//,'');
+    var bad=p.indexOf('..')>=0||p.indexOf('.github')===0||(type==='android'&&p.indexOf('app/src/main/')!==0);
+    if(bad){log('דילגתי על קובץ לא מותר: '+p,'w');return}
+    var c=files[k];
+    if(p==='app/src/main/AndroidManifest.xml')c=c.replace(/\spackage="[^"]*"/,'');
+    out[p]=c;
+  });
+  return out;
+}
+function check(files,type){
+  var p=[],ks=Object.keys(files);
+  if(type==='web'){if(!files['index.html'])p.push('index.html is missing at the root')}
+  else{
+    if(!files['app/src/main/AndroidManifest.xml'])p.push('AndroidManifest.xml is missing');
+    if(!files['app/src/main/java/com/generated/app/MainActivity.java'])p.push('MainActivity.java is missing in app/src/main/java/com/generated/app/');
+    ks.forEach(function(k){if(/\.java$/.test(k)&&!/^\s*package\s+com\.generated\.app[\w.]*\s*;/m.test(files[k]))p.push(k+' must declare package com.generated.app')});
+  }
+  ks.forEach(function(k){
+    if(/\.xml$/.test(k)){
+      var d=new DOMParser().parseFromString(files[k],'application/xml');
+      if(d.getElementsByTagName('parsererror').length)p.push(k+' is not well-formed XML');
+    }
+  });
+  return p;
+}
+
+async function ask(system,user){
+  var g=prov==='gemini',r;
+  if(g){
+    r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':streamGenerateContent?alt=sse',{method:'POST',headers:{'content-type':'application/json','x-goog-api-key':aiKey},
+      body:JSON.stringify({systemInstruction:{parts:[{text:system}]},contents:[{role:'user',parts:[{text:user}]}],generationConfig:{maxOutputTokens:32000}})});
+  }else{
+    r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':aiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:model,max_tokens:32000,stream:true,system:system,messages:[{role:'user',content:user}]})});
+  }
+  if(!r.ok){
+    var tx=await r.text();
+    var hint=r.status===429?' (הגעת למגבלת השימוש. חכה דקה ונסה שוב)':(r.status===404&&g?' (שם המודל לא קיים. נסה gemini-flash-latest)':'');
+    var er=new Error((g?'Gemini ':'Anthropic ')+r.status+hint+': '+tx.slice(0,300));er.status=r.status;throw er;
+  }
+  var rd=r.body.getReader(),dec=new TextDecoder(),buf='',out='',stop='';
+  for(;;){
+    var s=await rd.read();if(s.done)break;
+    buf+=dec.decode(s.value,{stream:true});
+    var i;
+    while((i=buf.indexOf('\n'))>=0){
+      var line=buf.slice(0,i).trim();buf=buf.slice(i+1);
+      if(line.indexOf('data:')!==0)continue;
+      var dt=line.slice(5).trim();if(!dt||dt==='[DONE]')continue;
+      var j;try{j=JSON.parse(dt)}catch(e){continue}
+      if(g){
+        if(j.error)throw new Error('Gemini: '+(j.error.message||'stream error'));
+        var c=j.candidates&&j.candidates[0];
+        if(c){
+          var ps=(c.content&&c.content.parts)||[];
+          ps.forEach(function(p){if(p.text&&!p.thought)out+=p.text});
+          if(c.finishReason==='MAX_TOKENS')stop='max_tokens';
+        }
+      }else if(j.type==='content_block_delta'&&j.delta&&j.delta.type==='text_delta')out+=j.delta.text;
+      else if(j.type==='message_delta'&&j.delta&&j.delta.stop_reason)stop=j.delta.stop_reason;
+      else if(j.type==='error')throw new Error('Anthropic: '+((j.error&&j.error.message)||'stream error'));
+    }
+  }
+  if(stop==='max_tokens')throw new Error('התשובה נחתכה כי היא ארוכה מדי. נסה תיאור קטן יותר.');
+  if(!out)throw new Error('המודל לא החזיר תשובה');
+  return out;
+}
+
+async function askR(s,u){
+  for(var i=0;;i++){
+    try{return await ask(s,u)}
+    catch(e){if(e.status===429&&i<3){log('מגבלת שימוש אצל הספק. ממתין 40 שניות ומנסה שוב…','w');await sleep(40000)}else throw e}
+  }
+}
+function crc32(u){
+  var t=crc32.t,c,n,k;
+  if(!t){t=crc32.t=[];for(n=0;n<256;n++){c=n;for(k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}}
+  var r=-1;for(var i=0;i<u.length;i++)r=t[(r^u[i])&255]^(r>>>8);
+  return (r^-1)>>>0;
+}
+function zip(files){
+  var enc=new TextEncoder(),parts=[],cd=[],off=0;
+  function a(v,n){var o=[];for(var i=0;i<n;i++)o.push((v>>>(8*i))&255);return o}
+  Object.keys(files).forEach(function(k){
+    var nb=enc.encode(k),d=enc.encode(files[k]),crc=crc32(d);
+    var lh=[].concat(a(0x04034b50,4),a(20,2),a(0x0800,2),a(0,2),a(0,2),a(0x21,2),a(crc,4),a(d.length,4),a(d.length,4),a(nb.length,2),a(0,2));
+    cd.push([].concat(a(0x02014b50,4),a(20,2),a(20,2),a(0x0800,2),a(0,2),a(0,2),a(0x21,2),a(crc,4),a(d.length,4),a(d.length,4),a(nb.length,2),a(0,2),a(0,2),a(0,2),a(0,2),a(0,4),a(off,4)),Array.prototype.slice.call(nb));
+    parts.push(new Uint8Array(lh),nb,d);off+=lh.length+nb.length+d.length;
+  });
+  var cdb=[].concat.apply([],cd),n=Object.keys(files).length;
+  parts.push(new Uint8Array(cdb),new Uint8Array([].concat(a(0x06054b50,4),a(0,2),a(0,2),a(n,2),a(n,2),a(cdb.length,4),a(off,4),a(0,2))));
+  return new Blob(parts,{type:'application/zip'});
+}
+function showFile(blob,name,text){
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.textContent=text;
+  $('result').appendChild(a);
+  try{a.click()}catch(e){}
+}
+async function getApk(repo,asset){
+  var r=await fetch('https://api.github.com/repos/'+repo+'/releases/assets/'+asset.id,{headers:{'Accept':'application/octet-stream'}});
+  if(!r.ok)throw new Error('download '+r.status);
+  var b=await r.blob();
+  return new Blob([b],{type:'application/vnd.android.package-archive'});
+}
+async function gh(path,o){
+  o=o||{};
+  var h={'Authorization':'Bearer '+ghTok,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};
+  if(o.body)h['Content-Type']='application/json';
+  var r=await fetch('https://api.github.com'+path,{method:o.method||'GET',headers:h,body:o.body?JSON.stringify(o.body):undefined});
+  var t=await r.text(),j=null;try{j=t?JSON.parse(t):null}catch(e){}
+  if(!r.ok){var e=new Error('GitHub '+r.status+' '+path+': '+((j&&j.message)||t.slice(0,200)));e.status=r.status;throw e}
+  return j;
+}
+async function retry(f,n){n=n||8;for(var i=0;;i++){try{return await f()}catch(e){if(i>=n)throw e;await sleep(2500)}}}
+
+async function commit(repo,branch,all,paths,msg){
+  var ref=await retry(function(){return gh('/repos/'+repo+'/git/ref/heads/'+branch)});
+  var head=ref.object.sha;
+  var hc=await gh('/repos/'+repo+'/git/commits/'+head);
+  var tree=await gh('/repos/'+repo+'/git/trees',{method:'POST',body:{base_tree:hc.tree.sha,tree:paths.map(function(p){return {path:p,mode:'100644',type:'blob',content:all[p]||'\n'}})}});
+  var c=await gh('/repos/'+repo+'/git/commits',{method:'POST',body:{message:msg,tree:tree.sha,parents:[head]}});
+  await gh('/repos/'+repo+'/git/refs/heads/'+branch,{method:'PATCH',body:{sha:c.sha}});
+  return c.sha;
+}
+async function waitRun(repo,sha){
+  var run=null;
+  for(var i=0;i<30&&!run;i++){
+    await sleep(4000);
+    var r=await gh('/repos/'+repo+'/actions/runs?head_sha='+sha);
+    run=(r.workflow_runs&&r.workflow_runs[0])||null;
+  }
+  if(!run)throw new Error('לא התחילה ריצה ב-Actions. ודא שהאסימון כולל את ההרשאה workflow.');
+  var t0=Date.now();
+  while(run.status!=='completed'){
+    if(Date.now()-t0>30*60000)throw new Error('הבנייה לוקחת יותר מ-30 דקות. בדוק בגיטהב: '+run.html_url);
+    await sleep(8000);
+    run=await gh('/repos/'+repo+'/actions/runs/'+run.id);
+  }
+  return run;
+}
+async function failLog(repo,sha,run){
+  var list=await gh('/repos/'+repo+'/issues?state=open&per_page=10');
+  for(var i=0;i<list.length;i++){
+    if(list[i].title.indexOf(sha)>=0){
+      try{await gh('/repos/'+repo+'/issues/'+list[i].number,{method:'PATCH',body:{state:'closed'}})}catch(e){}
+      return (list[i].body||'').slice(0,12000);
+    }
+  }
+  var out=[];
+  try{
+    var js=await gh('/repos/'+repo+'/actions/runs/'+run.id+'/jobs');
+    for(var k=0;k<js.jobs.length;k++){
+      var j=js.jobs[k];
+      (j.steps||[]).forEach(function(s){if(s.conclusion==='failure')out.push('Failed step: '+s.name)});
+      try{var an=await gh('/repos/'+repo+'/check-runs/'+j.id+'/annotations');an.forEach(function(x){out.push((x.title||'')+' '+(x.message||''))})}catch(e){}
+    }
+  }catch(e){}
+  return out.join('\n').slice(0,6000);
+}
+function show(url,text){
+  var a=document.createElement('a');a.href=url;a.textContent=text;a.target='_blank';a.rel='noopener';
+  $('result').appendChild(a);
+}
+function fixMsg(desc,files,problems){
+  return 'Original request:\n'+desc+'\n\nCurrent files:\n'+ser(files)+'\n\nPROBLEMS / BUILD LOG:\n'+problems+'\n\nFix every error. Output ONLY the files that change, each complete, in the same format (omit the NAME line).';
+}
+
+async function main(){
+  var type=$('type').value,desc=$('desc').value.trim();
+  prov=$('prov').value;aiKey=$('ai').value.trim();ghTok=$('gh').value.trim();model=$('model').value.trim();
+  var max=Math.max(1,Math.min(8,parseInt($('tries').value,10)||4));
+  if(!aiKey||!ghTok||!desc||!model){log('חסרים מפתח, אסימון, מודל או תיאור.','e');return}
+  try{if($('rem').checked){localStorage.setItem('af_ai',aiKey);localStorage.setItem('af_gh',ghTok)}else{localStorage.removeItem('af_ai');localStorage.removeItem('af_gh')}}catch(e){}
+  $('go').disabled=true;$('log').textContent='';$('result').textContent='';
+  try{
+    log('בודק את האסימון של גיטהב…');
+    var me=await gh('/user'),owner=me.login;
+    log('המודל כותב את הקוד (זה לוקח כמה דקות)…');
+    var res=parse(await askR(SYS[type],'Request:\n'+desc));
+    var files=clean(res.files,type),name=res.name;
+    for(var i=0;i<3;i++){
+      var pr=check(files,type);if(!pr.length)break;
+      log('בדיקה מקדימה מצאה בעיות, מתקן: '+pr.join('; '),'w');
+      var r2=parse(await askR(SYS[type],fixMsg(desc,files,pr.join('\n'))));
+      Object.assign(files,clean(r2.files,type));
+    }
+    var pr2=check(files,type);
+    if(pr2.length)throw new Error('הקוד שנוצר לא תקין: '+pr2.join('; '));
+    log('הקוד עבר בדיקה מקדימה ('+Object.keys(files).length+' קבצים).','ok');
+
+    var slug=(name||'app').toLowerCase().replace(/[^a-z0-9-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,30)||'app';
+    slug+='-'+Date.now().toString(36);
+    log('יוצר ריפו '+slug+'…');
+    var repoInfo=await gh('/user/repos',{method:'POST',body:{name:slug,description:'Generated app',auto_init:true,private:false}});
+    var repo=owner+'/'+repoInfo.name,branch=repoInfo.default_branch||'main';
+    if(type==='web'){showFile(zip(files),'site.zip','הורד את האתר (ZIP)');log('קובץ ה-ZIP הורד. ממשיך לפרסם ב-GitHub Pages…','ok')}
+    var all=type==='android'?Object.assign({},SC,files):Object.assign({},files);
+    var sha=await commit(repo,branch,all,Object.keys(all),'Initial version');
+    log('הקבצים הועלו.','ok');
+
+    if(type==='web'){
+      log('מפעיל GitHub Pages…');
+      try{await gh('/repos/'+repo+'/pages',{method:'POST',body:{source:{branch:branch,path:'/'}}})}catch(e){if(e.status!==409&&e.status!==422)throw e}
+      var url='https://'+owner+'.github.io/'+repoInfo.name+'/',t0=Date.now(),st='';
+      while(st!=='built'){
+        if(Date.now()-t0>6*60000)throw new Error('הפרסום לוקח זמן רב. נסה את הקישור בעוד כמה דקות: '+url);
+        await sleep(6000);
+        try{var b=await gh('/repos/'+repo+'/pages/builds/latest');st=b.status;if(st==='errored')throw new Error('GitHub Pages נכשל בפרסום')}catch(e){if(e.status!==404)throw e}
+      }
+      log('האתר באוויר. אם הקישור עדיין לא נטען, חכו דקה ורעננו.','ok');
+      show(url,'פתח את האתר');
+    }else{
+      for(var n=1;;n++){
+        log('בנייה '+n+': ממתין ל-GitHub Actions…');
+        var run=await waitRun(repo,sha);
+        if(run.conclusion==='success'){
+          var rel=await retry(function(){return gh('/repos/'+repo+'/releases/tags/v'+run.run_number)});
+          var asset=rel.assets&&rel.assets[0];
+          if(!asset)throw new Error('הבנייה הצליחה אבל לא נמצא קובץ APK: '+run.html_url);
+          log('ה-APK מוכן. מוריד…','ok');
+          try{showFile(await getApk(repo,asset),'app-debug.apk','הורד את ה-APK')}
+          catch(e){log('ההורדה האוטומטית נחסמה, משתמש בקישור ישיר.','w');show(asset.browser_download_url,'הורד APK')}
+          show('https://github.com/'+repo,'פתח את הקוד בגיטהב');
+          break;
+        }
+        var lg=await failLog(repo,sha,run);
+        if(!lg)throw new Error('הבנייה נכשלה ולא נמצא לוג. פרטים: '+run.html_url);
+        if(n>=max)throw new Error('הבנייה נכשלה אחרי '+n+' ניסיונות. פרטים: '+run.html_url);
+        log('הבנייה נכשלה, מתקן ומעלה מחדש…','w');
+        var r3=parse(await askR(SYS[type],fixMsg(desc,files,lg)));
+        var ch=clean(r3.files,type);
+        if(!Object.keys(ch).length)throw new Error('המודל לא החזיר תיקון');
+        Object.assign(files,ch);Object.assign(all,ch);
+        var pr3=check(files,type);if(pr3.length)log('אזהרה: '+pr3.join('; '),'w');
+        sha=await commit(repo,branch,all,Object.keys(ch),'Fix build '+n);
+      }
+    }
+  }catch(e){log('שגיאה: '+(e&&e.message||e),'e')}
+  finally{$('go').disabled=false}
+}
+
+try{$('ai').value=localStorage.getItem('af_ai')||'';$('gh').value=localStorage.getItem('af_gh')||'';if($('ai').value)$('rem').checked=true}catch(e){}
+$('prov').addEventListener('change',applyProv);applyProv();
+$('help').addEventListener('click',function(){var b=$('helpbox');b.hidden=!b.hidden;$('help').setAttribute('aria-expanded',String(!b.hidden))});
+$('go').addEventListener('click',main);
+})();
+</script>
+</body>
+</html>
