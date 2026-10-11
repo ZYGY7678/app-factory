@@ -88,7 +88,7 @@ button.sec:hover{background:rgba(127,214,255,.1);transform:none;box-shadow:none}
 <p class="sub">מתארים אפליקציה, והאתר כותב אותה, בונה אותה בגיטהב ומוריד לך את הקובץ המוכן (APK או ZIP). אם הבנייה נכשלת, הלוג נשלח אוטומטית למודל לתיקון. הכול רץ בדפדפן שלך.</p>
 <div class="card">
 <label for="prov">מודל שכותב את הקוד</label>
-<select id="prov"><option value="gemini">Gemini של גוגל (חינמי)</option><option value="anthropic">Claude של Anthropic (בתשלום)</option></select>
+<select id="prov"><option value="gemini">Gemini של גוגל (חינמי)</option></select>
 <label for="ai" id="ailab">מפתח API</label>
 <input id="ai" type="password" autocomplete="off">
 <p class="hint"><a id="ailink" href="#" target="_blank" rel="noopener">להוצאת מפתח API</a> <span id="aihint"></span></p>
@@ -103,7 +103,7 @@ button.sec:hover{background:rgba(127,214,255,.1);transform:none;box-shadow:none}
 <div id="repowrap" hidden><label for="repo">הריפו לשדרוג</label><input id="repo" dir="ltr" placeholder="user/app-name או קישור לריפו"><p class="hint">אחרי כל בנייה השדה מתמלא אוטומטית בריפו האחרון. האתר מזהה לבד אם זו אפליקציית אנדרואיד או אתר.</p></div>
 <div class="row">
 <div id="typewrap"><label for="type">סוג</label><select id="type"><option value="android">אפליקציית אנדרואיד (APK)</option><option value="web">אתר</option></select></div>
-<div><label for="model">שם המודל</label><input id="model" list="models"><datalist id="models"><option value="gemini-flash-latest"><option value="gemini-3.5-flash"><option value="gemini-2.5-flash"><option value="claude-sonnet-5-5"><option value="claude-opus-5-5"><option value="claude-haiku-5-5"></datalist></div>
+<div><label for="model">שם המודל</label><input id="model" list="models"><datalist id="models"><option value="gemini-flash-latest"><option value="gemini-3.5-flash"><option value="gemini-2.5-flash"></datalist></div>
 </div>
 <label for="desc" id="desclab">מה לבנות?</label>
 <textarea id="desc" placeholder="למשל: מחשבון טיפים עם חלוקה בין חברים"></textarea>
@@ -121,8 +121,7 @@ button.sec:hover{background:rgba(127,214,255,.1);transform:none;box-shadow:none}
 var $=function(id){return document.getElementById(id)};
 var sleep=function(ms){return new Promise(function(r){setTimeout(r,ms)})};
 var aiKey='',ghTok='',model='',prov='gemini',known=[];
-var PV={gemini:{lab:'מפתח API של Gemini',link:'https://aistudio.google.com/apikey',note:'(חינמי, בלי כרטיס אשראי. במסלול החינמי גוגל עשויה להשתמש בתוכן לשיפור המודלים)',model:'gemini-flash-latest',ph:'AIza...'},
-anthropic:{lab:'מפתח API של Anthropic',link:'https://console.anthropic.com/settings/keys',note:'(בתשלום: צריך חשבון עם אשראי בקונסולה)',model:'claude-sonnet-5-5',ph:'sk-ant-...'}};
+var PV={gemini:{lab:'מפתח API של Gemini',link:'https://aistudio.google.com/apikey',note:'(חינמי, בלי כרטיס אשראי. במסלול החינמי גוגל עשויה להשתמש בתוכן לשיפור המודלים)',model:'gemini-flash-latest',ph:'AIza...'}};
 function applyProv(){var v=PV[$('prov').value];$('ailab').textContent=v.lab;$('ailink').href=v.link;$('aihint').textContent=v.note;$('ai').placeholder=v.ph;$('model').value=v.model}
 
 var WF=['name: Build','on: [push]','permissions:','  contents: write','  issues: write','jobs:','  build:','    runs-on: ubuntu-latest','    steps:',
@@ -196,18 +195,12 @@ function check(files,type){
 }
 
 async function ask(system,user){
-  var g=prov==='gemini',r;
-  if(g){
-    r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':streamGenerateContent?alt=sse',{method:'POST',headers:{'content-type':'application/json','x-goog-api-key':aiKey},
-      body:JSON.stringify({systemInstruction:{parts:[{text:system}]},contents:[{role:'user',parts:[{text:user}]}],generationConfig:{maxOutputTokens:32000}})});
-  }else{
-    r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':aiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:model,max_tokens:32000,stream:true,system:system,messages:[{role:'user',content:user}]})});
-  }
+  var r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':streamGenerateContent?alt=sse',{method:'POST',headers:{'content-type':'application/json','x-goog-api-key':aiKey},
+    body:JSON.stringify({systemInstruction:{parts:[{text:system}]},contents:[{role:'user',parts:[{text:user}]}],generationConfig:{maxOutputTokens:32000}})});
   if(!r.ok){
     var tx=await r.text();
-    var hint=r.status===429?' (הגעת למגבלת השימוש. חכה דקה ונסה שוב)':(r.status===404&&g?' (שם המודל לא קיים. נסה gemini-flash-latest)':'');
-    var er=new Error((g?'Gemini ':'Anthropic ')+r.status+hint+': '+tx.slice(0,300));er.status=r.status;throw er;
+    var hint=r.status===429?' (הגעת למגבלת השימוש. חכה דקה ונסה שוב)':(r.status===404?' (שם המודל לא קיים. נסה gemini-flash-latest)':'');
+    var er=new Error('Gemini '+r.status+hint+': '+tx.slice(0,300));er.status=r.status;throw er;
   }
   var rd=r.body.getReader(),dec=new TextDecoder(),buf='',out='',stop='';
   for(;;){
@@ -219,24 +212,19 @@ async function ask(system,user){
       if(line.indexOf('data:')!==0)continue;
       var dt=line.slice(5).trim();if(!dt||dt==='[DONE]')continue;
       var j;try{j=JSON.parse(dt)}catch(e){continue}
-      if(g){
-        if(j.error)throw new Error('Gemini: '+(j.error.message||'stream error'));
-        var c=j.candidates&&j.candidates[0];
-        if(c){
-          var ps=(c.content&&c.content.parts)||[];
-          ps.forEach(function(p){if(p.text&&!p.thought)out+=p.text});
-          if(c.finishReason==='MAX_TOKENS')stop='max_tokens';
-        }
-      }else if(j.type==='content_block_delta'&&j.delta&&j.delta.type==='text_delta')out+=j.delta.text;
-      else if(j.type==='message_delta'&&j.delta&&j.delta.stop_reason)stop=j.delta.stop_reason;
-      else if(j.type==='error')throw new Error('Anthropic: '+((j.error&&j.error.message)||'stream error'));
+      if(j.error)throw new Error('Gemini: '+(j.error.message||'stream error'));
+      var c=j.candidates&&j.candidates[0];
+      if(c){
+        var ps=(c.content&&c.content.parts)||[];
+        ps.forEach(function(p){if(p.text&&!p.thought)out+=p.text});
+        if(c.finishReason==='MAX_TOKENS')stop='max_tokens';
+      }
     }
   }
   if(stop==='max_tokens')throw new Error('התשובה נחתכה כי היא ארוכה מדי. נסה תיאור קטן יותר.');
   if(!out)throw new Error('המודל לא החזיר תשובה');
   return out;
 }
-
 async function askR(s,u){
   for(var i=0;;i++){
     try{return await ask(s,u)}
