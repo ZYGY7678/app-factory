@@ -4,36 +4,87 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>מפעל האפליקציות</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;800&display=swap">
 <style>
-:root{--bg:#eef1f6;--card:#fff;--ink:#1d2433;--mut:#5d687c;--line:#d3d9e4;--acc:#1f6f5c;--err:#b3261e;--warn:#8a5a00}
-@media(prefers-color-scheme:dark){:root{--bg:#141922;--card:#1c2330;--ink:#e8ecf3;--mut:#9aa6ba;--line:#2e394b;--acc:#4fbf9f;--err:#ff8a80;--warn:#f0c060}}
+:root{--bg:#0c2340;--bg2:#08172b;--ink:#eaf4ff;--mut:#93b4d1;--line:rgba(127,214,255,.3);--cy:#7fd6ff;--acc:#ffd166;--err:#ff8a80;--ok:#7ee0a8}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,"Segoe UI",Arial,sans-serif}
-main{max-width:640px;margin:0 auto;padding:24px 16px 64px}
-h1{font-size:28px;margin:8px 0 4px}
-.sub{color:var(--mut);margin:0 0 20px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px}
-label{display:block;font-weight:600;margin:14px 0 4px}
-input,select,textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
-input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+body{margin:0;min-height:100vh;color:var(--ink);font:16px/1.6 Heebo,system-ui,"Segoe UI",Arial,sans-serif;
+background:radial-gradient(900px 500px at 80% -10%,#1b4b80 0%,transparent 60%),linear-gradient(var(--bg),var(--bg2));background-attachment:fixed;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:-60px;z-index:-1;pointer-events:none;
+background-image:linear-gradient(rgba(127,214,255,.09) 1px,transparent 1px),linear-gradient(90deg,rgba(127,214,255,.09) 1px,transparent 1px);background-size:44px 44px;animation:drift 24s linear infinite}
+@keyframes drift{to{transform:translate(44px,44px)}}
+main{max-width:660px;margin:0 auto;padding:28px 16px 72px}
+header{display:flex;align-items:center;gap:16px;margin-bottom:6px}
+.gears{width:96px;height:64px;flex:none;animation:fade .8s both}
+.gears g{transform-box:fill-box;transform-origin:center;fill:none;stroke:var(--cy)}
+.g1{animation:spin 12s linear infinite}.g2{animation:spin 7.6s linear infinite reverse;stroke:var(--acc)!important}
+.busy .g1{animation-duration:2.4s}.busy .g2{animation-duration:1.5s}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+h1{position:relative;margin:0;font-size:34px;font-weight:800;letter-spacing:-.5px;animation:wipe .9s .1s cubic-bezier(.2,.8,.2,1) both}
+h1::after{content:"";position:absolute;inset-inline-start:0;bottom:-6px;height:3px;width:100%;background:var(--acc);transform-origin:right;animation:draw 1s .8s cubic-bezier(.2,.8,.2,1) both}
+@keyframes wipe{from{clip-path:inset(0 0 0 100%);opacity:0}to{clip-path:inset(0);opacity:1}}
+@keyframes draw{from{transform:scaleX(0)}to{transform:scaleX(.28)}}
+.sub{color:var(--mut);margin:14px 0 22px;animation:rise .7s .3s both}
+.card{position:relative;background:rgba(8,23,43,.72);backdrop-filter:blur(8px);border:1px dashed var(--line);border-radius:14px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.35);animation:rise .8s .2s cubic-bezier(.2,.8,.2,1) both}
+.card::before,.card::after{content:"";position:absolute;width:18px;height:18px;border:2px solid var(--acc);pointer-events:none}
+.card::before{top:-2px;inset-inline-start:-2px;border-width:2px 2px 0 0;border-radius:0 12px 0 0;transform:scaleX(-1)}
+.card::after{bottom:-2px;inset-inline-end:-2px;border-width:0 0 2px 2px;border-radius:0 0 0 12px;transform:scaleX(-1)}
+.card>*{animation:rise .6s both}
+.card>*:nth-child(1){animation-delay:305ms}.card>*:nth-child(2){animation-delay:350ms}.card>*:nth-child(3){animation-delay:395ms}.card>*:nth-child(4){animation-delay:440ms}.card>*:nth-child(5){animation-delay:485ms}.card>*:nth-child(6){animation-delay:530ms}.card>*:nth-child(7){animation-delay:575ms}.card>*:nth-child(8){animation-delay:620ms}.card>*:nth-child(9){animation-delay:665ms}.card>*:nth-child(10){animation-delay:710ms}.card>*:nth-child(11){animation-delay:755ms}.card>*:nth-child(12){animation-delay:800ms}.card>*:nth-child(13){animation-delay:845ms}.card>*:nth-child(14){animation-delay:890ms}.card>*:nth-child(15){animation-delay:935ms}.card>*:nth-child(16){animation-delay:980ms}.card>*:nth-child(17){animation-delay:1025ms}.card>*:nth-child(18){animation-delay:1070ms}.card>*:nth-child(19){animation-delay:1115ms}.card>*:nth-child(20){animation-delay:1160ms}.card>*:nth-child(21){animation-delay:1205ms}.card>*:nth-child(22){animation-delay:1250ms}.card>*:nth-child(23){animation-delay:1295ms}.card>*:nth-child(24){animation-delay:1340ms}.card>*:nth-child(25){animation-delay:1385ms}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+label{display:block;font-weight:600;margin:16px 0 5px;color:var(--cy);transition:color .2s}
+label:focus-within,label:has(+input:focus),label:has(+select:focus),label:has(+textarea:focus){color:var(--acc)}
+input,select,textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.05);color:var(--ink);font:inherit;transition:border-color .2s,box-shadow .2s,background .2s}
+select option{background:#0c2340;color:var(--ink)}
+input:hover,select:hover,textarea:hover{background:rgba(255,255,255,.08)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px rgba(255,209,102,.22);background:rgba(255,255,255,.09)}
 textarea{min-height:130px;resize:vertical}
-.row{display:flex;gap:12px}.row>div{flex:1}
-.hint a{color:var(--acc);font-weight:600}
-.hint{font-size:13px;color:var(--mut);margin:4px 0 0}
-.chk{display:flex;align-items:center;gap:8px;margin-top:14px;font-weight:400}
-.chk input{width:auto}
-button{margin-top:18px;width:100%;padding:12px;border:0;border-radius:6px;background:var(--acc);color:#fff;font:600 17px inherit;cursor:pointer}
-button.sec{background:transparent;color:var(--acc);border:1px solid var(--acc);margin-top:16px;padding:8px;font-size:15px}
-button:disabled{opacity:.5;cursor:wait}
-#log{margin-top:18px;font-size:14px}
-#log div{padding:4px 0;border-bottom:1px solid var(--line)}
-.w{color:var(--warn)}.e{color:var(--err);font-weight:600}.ok{color:var(--acc);font-weight:600}
-#result a{display:block;margin-top:14px;padding:14px;border-radius:8px;background:var(--acc);color:#fff;text-align:center;font-weight:700;text-decoration:none;word-break:break-all}
+.row{display:flex;gap:12px}.row>div{flex:1;min-width:0}
+.hint{font-size:13px;color:var(--mut);margin:6px 0 0}
+.hint a{color:var(--cy);font-weight:600;text-decoration:none;background:linear-gradient(var(--cy),var(--cy)) 0 100%/0 1px no-repeat;transition:background-size .3s}
+.hint a:hover{background-size:100% 1px}
+.chk{display:flex;align-items:center;gap:8px;margin-top:16px;font-weight:400;color:var(--ink)}
+.chk input{width:auto;accent-color:var(--acc)}
+button{position:relative;overflow:hidden;margin-top:20px;width:100%;padding:14px;border:0;border-radius:10px;background:var(--acc);color:#0c2340;font:800 18px Heebo,inherit;cursor:pointer;transition:transform .15s,box-shadow .2s;box-shadow:0 6px 0 #b8902f}
+button::after{content:"";position:absolute;top:0;bottom:0;width:60px;inset-inline-start:-90px;background:linear-gradient(100deg,transparent,rgba(255,255,255,.65),transparent);transform:skewX(-20deg)}
+button:hover::after{animation:shine .8s}
+@keyframes shine{to{inset-inline-start:110%}}
+button:hover{transform:translateY(-2px);box-shadow:0 8px 0 #b8902f}
+button:active{transform:translateY(4px);box-shadow:0 2px 0 #b8902f}
+button:focus-visible{outline:2px solid var(--cy);outline-offset:3px}
+button:disabled{cursor:wait;transform:none;box-shadow:0 2px 0 #b8902f;background:repeating-linear-gradient(-45deg,var(--acc) 0 14px,#f0b94a 14px 28px);background-size:40px 40px;animation:belt 1s linear infinite}
+button:disabled::after{display:none}
+@keyframes belt{to{background-position:40px 0}}
+[hidden]{display:none!important}
+button.sec{margin-top:18px;padding:9px;font-size:15px;font-weight:600;background:transparent;color:var(--cy);border:1px dashed var(--cy);box-shadow:none}
+button.sec:hover{background:rgba(127,214,255,.1);transform:none;box-shadow:none}
+#log{margin-top:20px;font-size:14px}
+#log div{display:flex;align-items:flex-start;gap:10px;padding:8px 12px;margin-bottom:6px;border-radius:8px;background:rgba(8,23,43,.6);border:1px solid var(--line);animation:slide .4s cubic-bezier(.2,.8,.2,1) both}
+#log div::before{content:"";flex:none;width:9px;height:9px;margin-top:8px;border-radius:50%;background:var(--cy);animation:pulse 1.2s infinite}
+#log div:not(:last-child)::before{animation:none;opacity:.45}
+#log div.ok::before{content:"✓";width:auto;height:auto;margin:0;background:none;color:var(--ok);font-weight:800;animation:none;opacity:1}
+#log div.w::before{background:var(--acc)}
+#log div.e::before{content:"✕";width:auto;height:auto;margin:0;background:none;color:var(--err);font-weight:800;animation:none;opacity:1}
+.ok{color:var(--ok)}.w{color:var(--acc)}.e{color:var(--err);font-weight:600}
+@keyframes slide{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+@keyframes pulse{50%{transform:scale(1.7);opacity:.4}}
+#result a{display:block;margin-top:14px;padding:16px;border-radius:12px;background:var(--ok);color:#06281a;text-align:center;font-weight:800;font-size:18px;text-decoration:none;word-break:break-all;animation:pop .7s cubic-bezier(.3,1.6,.5,1) both,glow 2s .7s infinite;transition:transform .15s}
+#result a:hover{transform:scale(1.03)}
+#result a:nth-child(n+2){background:transparent;color:var(--cy);border:1px dashed var(--cy);animation:pop .7s .15s cubic-bezier(.3,1.6,.5,1) both;font-size:16px}
+@keyframes pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+@keyframes glow{50%{box-shadow:0 0 0 10px rgba(126,224,168,.0),0 0 28px rgba(126,224,168,.55)}}
+@media(max-width:480px){.row{flex-direction:column;gap:0}h1{font-size:28px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
-<main>
+<main id="app">
+<header>
+<svg class="gears" viewBox="0 0 96 64" aria-hidden="true"><g class="g1"><circle cx="34" cy="38" r="22" stroke-width="6" stroke-dasharray="2.88 2.88"/><circle cx="34" cy="38" r="18" stroke-width="3"/><circle cx="34" cy="38" r="5" stroke-width="3"/></g><g class="g2"><circle cx="76" cy="20" r="14" stroke-width="5" stroke-dasharray="2.75 2.75"/><circle cx="76" cy="20" r="11" stroke-width="2.5"/><circle cx="76" cy="20" r="3.5" stroke-width="2.5"/></g></svg>
 <h1>מפעל האפליקציות</h1>
+</header>
 <p class="sub">מתארים אפליקציה, והאתר כותב אותה, בונה אותה בגיטהב ומוריד לך את הקובץ המוכן (APK או ZIP). אם הבנייה נכשלת, הלוג נשלח אוטומטית למודל לתיקון. הכול רץ בדפדפן שלך.</p>
 <div class="card">
 <label for="prov">מודל שכותב את הקוד</label>
@@ -47,11 +98,14 @@ button:disabled{opacity:.5;cursor:wait}
 <p class="hint">צריך אסימון Classic עם ההרשאות <b>repo</b> ו-<b>workflow</b>. הריפו שנוצר ציבורי. המפתחות נשלחים רק לספק המודל ול-GitHub.</p>
 <button type="button" id="help" class="sec" aria-expanded="false" aria-controls="helpbox">הסתבכתם בהוצאת המפתח?</button>
 <p class="hint" id="helpbox" hidden><a href="https://mitmachim.top/post/1207480" target="_blank" rel="noopener">יש מדריך</a> מפורט להוצאת המפתח והאסימון.</p>
+<label for="mode">מה לעשות?</label>
+<select id="mode"><option value="new">ליצור אפליקציה חדשה</option><option value="up">לשדרג אפליקציה שכבר יצרתי</option></select>
+<div id="repowrap" hidden><label for="repo">הריפו לשדרוג</label><input id="repo" dir="ltr" placeholder="user/app-name או קישור לריפו"><p class="hint">אחרי כל בנייה השדה מתמלא אוטומטית בריפו האחרון. האתר מזהה לבד אם זו אפליקציית אנדרואיד או אתר.</p></div>
 <div class="row">
-<div><label for="type">סוג</label><select id="type"><option value="android">אפליקציית אנדרואיד (APK)</option><option value="web">אתר</option></select></div>
+<div id="typewrap"><label for="type">סוג</label><select id="type"><option value="android">אפליקציית אנדרואיד (APK)</option><option value="web">אתר</option></select></div>
 <div><label for="model">שם המודל</label><input id="model" list="models"><datalist id="models"><option value="gemini-flash-latest"><option value="gemini-3.5-flash"><option value="gemini-2.5-flash"><option value="claude-sonnet-5-5"><option value="claude-opus-5-5"><option value="claude-haiku-5-5"></datalist></div>
 </div>
-<label for="desc">מה לבנות?</label>
+<label for="desc" id="desclab">מה לבנות?</label>
 <textarea id="desc" placeholder="למשל: מחשבון טיפים עם חלוקה בין חברים"></textarea>
 <label for="tries">מספר ניסיונות תיקון אוטומטי (אנדרואיד)</label>
 <input id="tries" type="number" min="1" max="8" value="5">
@@ -66,7 +120,7 @@ button:disabled{opacity:.5;cursor:wait}
 'use strict';
 var $=function(id){return document.getElementById(id)};
 var sleep=function(ms){return new Promise(function(r){setTimeout(r,ms)})};
-var aiKey='',ghTok='',model='',prov='gemini';
+var aiKey='',ghTok='',model='',prov='gemini',known=[];
 var PV={gemini:{lab:'מפתח API של Gemini',link:'https://aistudio.google.com/apikey',note:'(חינמי, בלי כרטיס אשראי. במסלול החינמי גוגל עשויה להשתמש בתוכן לשיפור המודלים)',model:'gemini-flash-latest',ph:'AIza...'},
 anthropic:{lab:'מפתח API של Anthropic',link:'https://console.anthropic.com/settings/keys',note:'(בתשלום: צריך חשבון עם אשראי בקונסולה)',model:'claude-sonnet-5-5',ph:'sk-ant-...'}};
 function applyProv(){var v=PV[$('prov').value];$('ailab').textContent=v.lab;$('ailink').href=v.link;$('aihint').textContent=v.note;$('ai').placeholder=v.ph;$('model').value=v.model}
@@ -77,7 +131,7 @@ var WF=['name: Build','on: [push]','permissions:','  contents: write','  issues:
 '      - name: Build','        id: build','        continue-on-error: true','        run: gradle assembleDebug --no-daemon --console=plain > build.log 2>&1',
 '      - name: Report failure',"        if: steps.build.outcome == 'failure'",'        env:','          GH_TOKEN: ${{ github.token }}','        run: |',
 '          { grep -E -A3 "error:|AAPT|wrong" build.log | head -n 120 || true; echo "-----"; tail -n 30 build.log; } > report.txt',
-'          gh issue create --title "build-failed ${{ github.sha }}" --body-file report.txt','          exit 1',
+'          gh issue create --title "build-failed ${GITHUB_SHA}" --body-file report.txt','          exit 1',
 '      - name: Release',"        if: steps.build.outcome == 'success'",'        env:','          GH_TOKEN: ${{ github.token }}',
 '        run: gh release create "v${{ github.run_number }}" app/build/outputs/apk/debug/app-debug.apk --title "APK v${{ github.run_number }}" --notes "Debug APK"'];
 var SC={
@@ -90,9 +144,10 @@ var SC={
 '.github/workflows/build.yml':WF.join('\n')+'\n'};
 
 var FMT='Output ONLY file blocks, no explanations and no markdown fences. First line: "=====NAME: short-english-kebab-name=====". Then for every file a line "=====FILE: relative/path=====" followed by the complete file content.';
+var QUAL=' QUALITY BAR: you are fully capable of excellent work, so aim for perfection. Deliver a polished, accurate, genuinely useful result that is easy and pleasant to use and beautiful to look at. Make every requested feature actually work (no placeholders, no TODOs, no fake data unless asked). Handle empty states, invalid input and errors gracefully. Choose a deliberate, harmonious color palette, consistent spacing, clear typography, large comfortable touch targets, and clear intuitive flow; add subtle tasteful animations where they help. If the request is in Hebrew, write all UI text in Hebrew with correct RTL layout. Ambition must never cost correctness: the code has to build and run on the first try, so prefer simple, robust constructs over clever ones.';
 var SYS={
-android:'You are a senior Android engineer. Write a complete, compilable Android app in Java for the request. HARD RULES: Java only (no Kotlin). Only the Android framework: no AndroidX, AppCompat, Material or third-party libraries. Activities extend android.app.Activity; build the UI in code or layout XML. All Java files are in package com.generated.app under app/src/main/java/com/generated/app/ with a launcher activity MainActivity. Write only files under app/src/main/: AndroidManifest.xml (no package attribute, no android:icon, MainActivity with android:exported="true" and MAIN/LAUNCHER, android:label="@string/app_name", theme @android:style/Theme.Material.Light.NoActionBar), res/values/strings.xml (app_name in the language of the request), layouts and XML drawables. Never write gradle files or workflows. minSdk 21, compileSdk 34: avoid newer APIs unless guarded. Declare needed permissions. Before answering, verify every import, every referenced id/resource and every brace. '+FMT,
-web:'You are a senior web developer. Write a complete static website/app for the request: index.html at the root plus optional css/js files with relative paths. Plain HTML/CSS/JS, no build step, no server; external libraries only from https://cdnjs.cloudflare.com. Works on mobile and desktop; RTL when the request is in Hebrew. Verify mentally that there are no errors. '+FMT};
+android:'You are a senior Android engineer. Write a complete, compilable Android app in Java for the request. HARD RULES: Java only (no Kotlin). Only the Android framework: no AndroidX, AppCompat, Material or third-party libraries. Activities extend android.app.Activity; build the UI in code or layout XML. All Java files are in package com.generated.app under app/src/main/java/com/generated/app/ with a launcher activity MainActivity. Write only files under app/src/main/: AndroidManifest.xml (no package attribute, android:icon="@drawable/ic_launcher", MainActivity with android:exported="true" and MAIN/LAUNCHER, android:label="@string/app_name", theme @android:style/Theme.Material.Light.NoActionBar), res/drawable/ic_launcher.xml (a beautiful, on-brand launcher icon as a VectorDrawable: width/height 96dp, viewportWidth/viewportHeight 96, only solid-color <path> shapes such as a rounded-square background in the app palette plus a simple symbolic glyph; no gradients), res/values/strings.xml (app_name in the language of the request), layouts and XML drawables. Never write gradle files or workflows. minSdk 21, compileSdk 34: avoid newer APIs unless guarded. Declare needed permissions. Style the UI with rounded XML drawables, a cohesive palette, generous padding and clear hierarchy using only the framework. Before answering, verify every import, every referenced id/resource and every brace. '+QUAL+FMT,
+web:'You are a senior web developer. Write a complete static website/app for the request: index.html at the root plus optional css/js files with relative paths. Plain HTML/CSS/JS, no build step, no server; external libraries only from https://cdnjs.cloudflare.com. Works on mobile and desktop; RTL when the request is in Hebrew. Include a favicon: create favicon.svg (a simple, attractive, on-brand icon) linked with <link rel="icon" href="favicon.svg" type="image/svg+xml">, plus <meta name="theme-color">, a proper <title>, and manifest.webmanifest (name, short_name, start_url ".", display "standalone", theme_color, background_color, icons using favicon.svg with sizes "any" and type "image/svg+xml") linked from index.html. Make it responsive, modern and visually refined. Verify mentally that there are no errors. '+QUAL+FMT};
 
 function log(t,c){var d=document.createElement('div');d.textContent=t;if(c)d.className=c;$('log').appendChild(d)}
 function ser(f){return Object.keys(f).map(function(k){return '=====FILE: '+k+'=====\n'+f[k]}).join('\n')}
@@ -103,7 +158,7 @@ function parse(t){
   while((m=re.exec(t))!==null)ms.push(m);
   ms.forEach(function(x,i){
     var c=t.slice(x.index+x[0].length,i+1<ms.length?ms[i+1].index:t.length).replace(/^\r?\n/,'');
-    var tick=String.fromCharCode(96),f=c.match(new RegExp('^'+tick.repeat(3)+'[^\\n]*\\n([\\s\\S]*?)\\n'+tick.repeat(3)+'\\s*$'));if(f)c=f[1];
+    var f=c.match(/^```[^\n]*\n([\s\S]*?)\n```\s*$/);if(f)c=f[1];
     files[x[1]]=c.replace(/\s+$/,'')+'\n';
   });
   return {name:name,files:files};
@@ -126,6 +181,9 @@ function check(files,type){
   else{
     if(!files['app/src/main/AndroidManifest.xml'])p.push('AndroidManifest.xml is missing');
     if(!files['app/src/main/java/com/generated/app/MainActivity.java'])p.push('MainActivity.java is missing in app/src/main/java/com/generated/app/');
+    var im=(files['app/src/main/AndroidManifest.xml']||'').match(/android:icon="@(drawable|mipmap)\/(\w+)"/),all2=ks.concat(known);
+    if(!im)p.push('The manifest must set android:icon="@drawable/ic_launcher" and res/drawable/ic_launcher.xml must be a VectorDrawable');
+    else if(!all2.some(function(k){return new RegExp('^app/src/main/res/'+im[1]+'[\\w-]*/'+im[2]+'\\.\\w+$').test(k)}))p.push('Icon resource '+im[1]+'/'+im[2]+' is missing; create res/drawable/ic_launcher.xml');
     ks.forEach(function(k){if(/\.java$/.test(k)&&!/^\s*package\s+com\.generated\.app[\w.]*\s*;/m.test(files[k]))p.push(k+' must declare package com.generated.app')});
   }
   ks.forEach(function(k){
@@ -274,51 +332,97 @@ function show(url,text){
   var a=document.createElement('a');a.href=url;a.textContent=text;a.target='_blank';a.rel='noopener';
   $('result').appendChild(a);
 }
+function parseRepo(s,owner){
+  s=s.replace(/^https?:\/\/github\.com\//,'').replace(/\.git$/,'').replace(/^\/+|\/+$/g,'');
+  var p=s.split('/');return p.length>=2?p[0]+'/'+p[1]:owner+'/'+p[0];
+}
+async function loadRepo(repo,branch){
+  var t=await gh('/repos/'+repo+'/git/trees/'+branch+'?recursive=1');
+  var skip=/\.(png|jpe?g|gif|webp|ico|apk|zip|jar|keystore|ttf|woff2?|mp3|mp4|pdf)$/i,files={},kn=[],tot=0;
+  var isA=t.tree.some(function(x){return x.path==='app/build.gradle'});
+  var items=t.tree.filter(function(x){
+    if(x.type!=='blob'||x.path.indexOf('.github/')===0||x.path.indexOf('..')>=0)return false;
+    if(isA&&x.path.indexOf('app/src/main/')!==0)return false;
+    if(skip.test(x.path)||(x.size||0)>200000){kn.push(x.path);return false}
+    return true;
+  });
+  for(var i=0;i<items.length;i++){
+    var b=await gh('/repos/'+repo+'/git/blobs/'+items[i].sha);
+    var bin=atob(b.content.replace(/\s/g,'')),u=new Uint8Array(bin.length);
+    for(var k=0;k<bin.length;k++)u[k]=bin.charCodeAt(k);
+    var txt=new TextDecoder().decode(u);tot+=txt.length;
+    if(tot>400000)throw new Error('הפרויקט גדול מדי לשדרוג אוטומטי');
+    files[items[i].path]=txt;
+  }
+  return {type:isA?'android':'web',files:files,known:kn};
+}
+function upMsg(desc,files){
+  return 'This is an EXISTING project. Upgrade it according to the request below. Keep everything that already works, keep the same package and structure, and do not remove features unless asked. Also make sure it has a polished launcher icon / favicon and refined visuals.\n\nCurrent files:\n'+ser(files)+'\n\nUPGRADE REQUEST:\n'+desc+'\n\nOutput ONLY the files that are added or changed, each COMPLETE, in the same format (omit the NAME line).';
+}
 function fixMsg(desc,files,problems){
   return 'Original request:\n'+desc+'\n\nCurrent files:\n'+ser(files)+'\n\nPROBLEMS / BUILD LOG:\n'+problems+'\n\nFix every error. Output ONLY the files that change, each complete, in the same format (omit the NAME line).';
 }
 
 async function main(){
-  var type=$('type').value,desc=$('desc').value.trim();
+  var up=$('mode').value==='up',type=$('type').value,desc=$('desc').value.trim(),repoIn=$('repo').value.trim();
   prov=$('prov').value;aiKey=$('ai').value.trim();ghTok=$('gh').value.trim();model=$('model').value.trim();
-  var max=Math.max(1,Math.min(8,parseInt($('tries').value,10)||4));
-  if(!aiKey||!ghTok||!desc||!model){log('חסרים מפתח, אסימון, מודל או תיאור.','e');return}
+  var max=Math.max(1,Math.min(8,parseInt($('tries').value,10)||5));
+  if(!aiKey||!ghTok||!desc||!model||(up&&!repoIn)){log('חסרים מפתח, אסימון, מודל, תיאור'+(up?' או ריפו לשדרוג':'')+'.','e');return}
   try{if($('rem').checked){localStorage.setItem('af_ai',aiKey);localStorage.setItem('af_gh',ghTok)}else{localStorage.removeItem('af_ai');localStorage.removeItem('af_gh')}}catch(e){}
-  $('go').disabled=true;$('log').textContent='';$('result').textContent='';
+  $('go').disabled=true;$('app').classList.add('busy');$('log').textContent='';$('result').textContent='';
   try{
     log('בודק את האסימון של גיטהב…');
-    var me=await gh('/user'),owner=me.login;
-    log('המודל כותב את הקוד (זה לוקח כמה דקות)…');
-    var res=parse(await askR(SYS[type],'Request:\n'+desc));
-    var files=clean(res.files,type),name=res.name;
+    var me=await gh('/user'),repo,branch,name,files,all,paths,touched={};
+    known=[];
+    if(up){
+      repo=parseRepo(repoIn,me.login);
+      log('טוען את הפרויקט '+repo+'…');
+      var info=await gh('/repos/'+repo);branch=info.default_branch;name=info.name;
+      var pj=await loadRepo(repo,branch);type=pj.type;files=pj.files;known=pj.known;
+      var fc=Object.keys(files).length;
+      if(!fc)throw new Error('לא נמצאו קבצי קוד בריפו');
+      if(type==='android'&&!files['app/src/main/AndroidManifest.xml'])throw new Error('זה לא ריפו אנדרואיד שנוצר כאן');
+      log('נטענו '+fc+' קבצים ('+(type==='android'?'אנדרואיד':'אתר')+'). המודל משדרג…');
+      var chg=clean(parse(await askR(SYS[type],upMsg(desc,files))).files,type);
+      if(!Object.keys(chg).length)throw new Error('המודל לא החזיר שינויים');
+      Object.assign(files,chg);Object.keys(chg).forEach(function(k){touched[k]=1});
+    }else{
+      log('המודל כותב את הקוד (זה לוקח כמה דקות)…');
+      var res=parse(await askR(SYS[type],'Request:\n'+desc));
+      files=clean(res.files,type);name=res.name;
+    }
     for(var i=0;i<3;i++){
       var pr=check(files,type);if(!pr.length)break;
       log('בדיקה מקדימה מצאה בעיות, מתקן: '+pr.join('; '),'w');
-      var r2=parse(await askR(SYS[type],fixMsg(desc,files,pr.join('\n'))));
-      Object.assign(files,clean(r2.files,type));
+      var c2=clean(parse(await askR(SYS[type],fixMsg(desc,files,pr.join('\n')))).files,type);
+      Object.assign(files,c2);Object.keys(c2).forEach(function(k){touched[k]=1});
     }
     var pr2=check(files,type);
     if(pr2.length)throw new Error('הקוד שנוצר לא תקין: '+pr2.join('; '));
     log('הקוד עבר בדיקה מקדימה ('+Object.keys(files).length+' קבצים).','ok');
-
-    var slug=(name||'app').toLowerCase().replace(/[^a-z0-9-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,30)||'app';
-    slug+='-'+Date.now().toString(36);
-    log('יוצר ריפו '+slug+'…');
-    var repoInfo=await gh('/user/repos',{method:'POST',body:{name:slug,description:'Generated app',auto_init:true,private:false}});
-    var repo=owner+'/'+repoInfo.name,branch=repoInfo.default_branch||'main';
     if(type==='web'){showFile(zip(files),'site.zip','הורד את האתר (ZIP)');log('קובץ ה-ZIP הורד. ממשיך לפרסם ב-GitHub Pages…','ok')}
-    var all=type==='android'?Object.assign({},SC,files):Object.assign({},files);
-    var sha=await commit(repo,branch,all,Object.keys(all),'Initial version');
-    log('הקבצים הועלו.','ok');
+
+    if(up){all=files;paths=Object.keys(touched)}
+    else{
+      var slug=(name||'app').toLowerCase().replace(/[^a-z0-9-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,30)||'app';
+      slug+='-'+Date.now().toString(36);
+      log('יוצר ריפו '+slug+'…');
+      var ri=await gh('/user/repos',{method:'POST',body:{name:slug,description:'Generated app',auto_init:true,private:false}});
+      repo=me.login+'/'+ri.name;name=ri.name;branch=ri.default_branch||'main';
+      all=type==='android'?Object.assign({},SC,files):Object.assign({},files);paths=Object.keys(all);
+    }
+    $('repo').value=repo;try{localStorage.setItem('af_repo',repo)}catch(e){}
+    var sha=await commit(repo,branch,all,paths,up?'Upgrade':'Initial version');
+    log(up?'השינויים הועלו.':'הקבצים הועלו.','ok');
 
     if(type==='web'){
       log('מפעיל GitHub Pages…');
       try{await gh('/repos/'+repo+'/pages',{method:'POST',body:{source:{branch:branch,path:'/'}}})}catch(e){if(e.status!==409&&e.status!==422)throw e}
-      var url='https://'+owner+'.github.io/'+repoInfo.name+'/',t0=Date.now(),st='';
+      var url='https://'+repo.split('/')[0]+'.github.io/'+name+'/',t0=Date.now(),st='';
       while(st!=='built'){
         if(Date.now()-t0>6*60000)throw new Error('הפרסום לוקח זמן רב. נסה את הקישור בעוד כמה דקות: '+url);
         await sleep(6000);
-        try{var b=await gh('/repos/'+repo+'/pages/builds/latest');st=b.status;if(st==='errored')throw new Error('GitHub Pages נכשל בפרסום')}catch(e){if(e.status!==404)throw e}
+        try{var b=await gh('/repos/'+repo+'/pages/builds/latest');st=b.status;if(st==='errored')throw new Error('GitHub Pages נכשל בפרסום');if(st==='built'&&b.commit&&b.commit!==sha&&Date.now()-t0<90000)st=''}catch(e){if(e.status!==404)throw e}
       }
       log('האתר באוויר. אם הקישור עדיין לא נטען, חכו דקה ורעננו.','ok');
       show(url,'פתח את האתר');
@@ -340,8 +444,7 @@ async function main(){
         if(!lg)throw new Error('הבנייה נכשלה ולא נמצא לוג. פרטים: '+run.html_url);
         if(n>=max)throw new Error('הבנייה נכשלה אחרי '+n+' ניסיונות. פרטים: '+run.html_url);
         log('הבנייה נכשלה, מתקן ומעלה מחדש…','w');
-        var r3=parse(await askR(SYS[type],fixMsg(desc,files,lg)));
-        var ch=clean(r3.files,type);
+        var ch=clean(parse(await askR(SYS[type],fixMsg(desc,files,lg))).files,type);
         if(!Object.keys(ch).length)throw new Error('המודל לא החזיר תיקון');
         Object.assign(files,ch);Object.assign(all,ch);
         var pr3=check(files,type);if(pr3.length)log('אזהרה: '+pr3.join('; '),'w');
@@ -349,10 +452,18 @@ async function main(){
       }
     }
   }catch(e){log('שגיאה: '+(e&&e.message||e),'e')}
-  finally{$('go').disabled=false}
+  finally{$('go').disabled=false;$('app').classList.remove('busy')}
+}
+function applyMode(){
+  var up=$('mode').value==='up';
+  $('repowrap').hidden=!up;$('typewrap').hidden=up;
+  $('desclab').textContent=up?'מה לשדרג או להוסיף?':'מה לבנות?';
+  $('desc').placeholder=up?'למשל: הוסף מצב כהה ואייקון חדש':'למשל: מחשבון טיפים עם חלוקה בין חברים';
 }
 
 try{$('ai').value=localStorage.getItem('af_ai')||'';$('gh').value=localStorage.getItem('af_gh')||'';if($('ai').value)$('rem').checked=true}catch(e){}
+try{$('repo').value=localStorage.getItem('af_repo')||''}catch(e){}
+$('mode').addEventListener('change',applyMode);applyMode();
 $('prov').addEventListener('change',applyProv);applyProv();
 $('help').addEventListener('click',function(){var b=$('helpbox');b.hidden=!b.hidden;$('help').setAttribute('aria-expanded',String(!b.hidden))});
 $('go').addEventListener('click',main);
