@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0c2340">
+<link rel="icon" href="./notification-icon.svg" type="image/svg+xml">
 <title>מפעל האפליקציות</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;800&display=swap">
@@ -83,6 +85,8 @@ button.sec:hover{background:rgba(127,214,255,.1);transform:none;box-shadow:none}
 #chatlog .chat-msg b{display:block;color:var(--cy);margin-bottom:3px}
 #attachments{padding:9px;background:rgba(255,255,255,.035)}
 #refreshModels{margin-top:8px}
+#notifyToggle{margin-top:12px}
+#notifyStatus{margin-top:6px}
 .chat-actions{align-items:stretch}
 .chat-actions button{height:calc(100% - 20px);font-size:14px}
 @media(max-width:480px){.row{flex-direction:column;gap:0}h1{font-size:28px}.chat-actions button{height:auto}}
@@ -146,6 +150,8 @@ button.sec:hover{background:rgba(127,214,255,.1);transform:none;box-shadow:none}
 <label for="tries">מספר ניסיונות תיקון אוטומטי (אנדרואיד)</label>
 <input id="tries" type="number" min="1" max="8" value="5">
 <label class="chk"><input id="rem" type="checkbox">זכור את המפתחות במכשיר הזה</label>
+<button type="button" id="notifyToggle" class="sec">הפעל התראות התקדמות</button>
+<p class="hint" id="notifyStatus">אפשר לקבל התראות קופצות בזמן בנייה גם כשעוברים ללשונית אחרת. נדרש אישור מהדפדפן.</p>
 <button id="go">בנה לי</button>
 </div>
 <div id="log"></div>
@@ -159,6 +165,7 @@ var sleep=function(ms){return new Promise(function(r){setTimeout(r,ms)})};
 var aiKey='',ghTok='',model='',prov='gemini',known=[];
 var requestAttachmentParts=[],requestAttachmentText='',attachmentSignature='';
 var interviewHistory=[],interviewBusy=false,interviewMerged=false,lastModelsKey='';
+var notificationRegistration=null,notificationsEnabled=false,lastNotifiedText='',lastNotifiedAt=0;
 var INTERVIEW_SYS='אתה יועץ מוצר ומנתח דרישות מנוסה, שעוזר למשתמש לתכנן אפליקציה או אתר לפני כתיבת הקוד. דבר בעברית ברורה. שאל רק שאלות הבהרה מעשיות וחשובות, רצוי 2–5 בכל סבב, על מטרת המוצר, המשתמשים, המסכים, הפעולות, העיצוב והפלטפורמה. התייחס לתיאור המקורי, לתשובות שכבר ניתנו ולתמונות/קבצים המצורפים. אל תשאל שוב שאלה שכבר נענתה ואל תכתוב קוד בשלב הזה. אם המשתמש מבקש להתקדם או שאין עוד שאלות מהותיות, כתוב סיכום קצר וברור של הדרישות והנחות העבודה והסבר שאפשר ללחוץ על הכפתור לשילוב השיחה בדרישות. אל תציג את הסיכום כאילו המשתמש אישר פרטים שלא אמר.';
 var PV={gemini:{lab:'מפתח API של Gemini',link:'https://aistudio.google.com/apikey',note:'(תנאי השימוש, המגבלות והעלות תלויים במודל ובהגדרות חשבון Google)',model:'gemini-flash-latest',ph:'AIza...'}};
 function applyProv(){var v=PV[$('prov').value];$('ailab').textContent=v.lab;$('ailink').href=v.link;$('aihint').textContent=v.note;$('ai').placeholder=v.ph;$('model').value=v.model}
@@ -187,7 +194,102 @@ var SYS={
 android:'You are a senior Android engineer. Write a complete, compilable Android app in Java for the request. HARD RULES: Java only (no Kotlin). Only the Android framework: no AndroidX, AppCompat, Material or third-party libraries. Activities extend android.app.Activity; build the UI in code or layout XML. All Java files are in package com.generated.app under app/src/main/java/com/generated/app/ with a launcher activity MainActivity. Write only files under app/src/main/: AndroidManifest.xml (no package attribute, android:icon="@drawable/ic_launcher", MainActivity with android:exported="true" and MAIN/LAUNCHER, android:label="@string/app_name", theme @android:style/Theme.Material.Light.NoActionBar), res/drawable/ic_launcher.xml (a beautiful, on-brand launcher icon as a VectorDrawable: width/height 96dp, viewportWidth/viewportHeight 96, only solid-color <path> shapes such as a rounded-square background in the app palette plus a simple symbolic glyph; no gradients), res/values/strings.xml (app_name in the language of the request), layouts and XML drawables. Never write gradle files or workflows. minSdk 21, compileSdk 34: avoid newer APIs unless guarded. Declare needed permissions. Style the UI with rounded XML drawables, a cohesive palette, generous padding and clear hierarchy using only the framework. Before answering, verify every import, every referenced id/resource and every brace. '+QUAL+FMT,
 web:'You are a senior web developer. Write a complete static website/app for the request: index.html at the root plus optional css/js files with relative paths. Plain HTML/CSS/JS, no build step, no server; external libraries only from https://cdnjs.cloudflare.com. Works on mobile and desktop; RTL when the request is in Hebrew. Include a favicon: create favicon.svg (a simple, attractive, on-brand icon) linked with <link rel="icon" href="favicon.svg" type="image/svg+xml">, plus <meta name="theme-color">, a proper <title>, and manifest.webmanifest (name, short_name, start_url ".", display "standalone", theme_color, background_color, icons using favicon.svg with sizes "any" and type "image/svg+xml") linked from index.html. Make it responsive, modern and visually refined. Verify mentally that there are no errors. '+QUAL+FMT};
 
-function log(t,c){var d=document.createElement('div');d.textContent=t;if(c)d.className=c;$('log').appendChild(d)}
+function log(t,c){
+  var d=document.createElement('div');d.textContent=t;if(c)d.className=c;$('log').appendChild(d);
+  var message=notificationForProgress(String(t),c);
+  if(message)showProgressNotification(message);
+}
+function notificationForProgress(t,c){
+  if(c==='e'||t.indexOf('שגיאה:')===0)return t;
+  var rules=[
+    ['בודק את האסימון של גיטהב','בודק חיבור ל-GitHub'],
+    ['טוען את הפרויקט','טוען את הפרויקט'],
+    ['נטענו ','הפרויקט נטען, Gemini מתחיל לעבוד'],
+    ['המודל כותב את הקוד','Gemini התחיל לכתוב את הקוד'],
+    ['המודל משדרג','Gemini עובד על שדרוג הפרויקט'],
+    ['בדיקה מקדימה מצאה בעיות, מתקן','נמצאה בעיה בבדיקת הקוד; מתבצע תיקון'],
+    ['הקוד עבר בדיקה מקדימה','בדיקת הקוד הראשונית הושלמה'],
+    ['יוצר ריפו','נוצר מאגר GitHub חדש'],
+    ['הקבצים הועלו.','הקבצים הועלו ל-GitHub'],
+    ['השינויים הועלו.','השינויים הועלו ל-GitHub'],
+    ['מפעיל GitHub Pages','מפרסם את האתר'],
+    ['האתר באוויר','האתר פורסם בהצלחה'],
+    ['ממתין ל-GitHub Actions','הבנייה רצה ב-GitHub Actions'],
+    ['ה-APK מוכן','קובץ ה-APK מוכן להורדה'],
+    ['הבנייה נכשלה, מתקן ומעלה מחדש','הבנייה נכשלה; Gemini מנסה לתקן'],
+    ['מגבלת שימוש אצל הספק','הגעת למגבלת שימוש; ניסיון נוסף יבוצע אוטומטית']
+  ];
+  for(var i=0;i<rules.length;i++)if(t.indexOf(rules[i][0])>=0)return rules[i][1]+(t.length>rules[i][0].length?': '+t.slice(rules[i][0].length).trim():'');
+  return '';
+}
+function updateNotificationUI(){
+  var button=$('notifyToggle'),status=$('notifyStatus');
+  if(!button||!status)return;
+  if(!('Notification' in window)||!('serviceWorker' in navigator)){
+    button.disabled=true;status.textContent='הדפדפן הזה אינו תומך בהתראות אתר עם Service Worker.';return;
+  }
+  if(Notification.permission==='denied'){
+    button.textContent='התראות חסומות בהגדרות הדפדפן';
+    status.textContent='כדי להפעיל התראות, יש לאפשר אותן בהגדרות האתר בדפדפן.';
+    return;
+  }
+  button.textContent=notificationsEnabled?'כבה התראות התקדמות':'הפעל התראות התקדמות';
+  status.textContent=notificationsEnabled?'ההתראות מופעלות: תתקבל הודעה על שלבי בנייה משמעותיים, הצלחה ושגיאות.':'לחץ כדי לאשר התראות קופצות. אפשר לעבור ללשונית אחרת בזמן שהתהליך רץ.';
+}
+async function initNotifications(){
+  try{
+    if(!('serviceWorker' in navigator)||!('Notification' in window)){updateNotificationUI();return}
+    notificationRegistration=await navigator.serviceWorker.register('./sw.js',{scope:'./'});
+    await navigator.serviceWorker.ready;
+    notificationsEnabled=localStorage.getItem('af_notifications')==='1'&&Notification.permission==='granted';
+    updateNotificationUI();
+  }catch(e){
+    var status=$('notifyStatus');
+    if(status)status.textContent='לא הצלחתי להכין את שירות ההתראות. בדוק שהאתר נטען דרך HTTPS ורענן את הדף.';
+  }
+}
+async function toggleNotifications(){
+  if(!('Notification' in window)||!('serviceWorker' in navigator)){
+    updateNotificationUI();return;
+  }
+  if(notificationsEnabled){
+    notificationsEnabled=false;
+    try{localStorage.setItem('af_notifications','0')}catch(e){}
+    updateNotificationUI();return;
+  }
+  try{
+    var permission=Notification.permission;
+    if(permission!=='granted')permission=await Notification.requestPermission();
+    if(permission!=='granted'){updateNotificationUI();return}
+    notificationRegistration=notificationRegistration||await navigator.serviceWorker.ready;
+    notificationsEnabled=true;
+    try{localStorage.setItem('af_notifications','1')}catch(e){}
+    updateNotificationUI();
+    await showProgressNotification('ההתראות הופעלו. אשלח הודעה כשהבנייה תתקדם.');
+  }catch(e){
+    var status=$('notifyStatus');
+    if(status)status.textContent='לא ניתן להפעיל התראות כרגע: '+(e.message||e);
+  }
+}
+async function showProgressNotification(message){
+  if(!notificationsEnabled||!('Notification' in window)||Notification.permission!=='granted')return;
+  var now=Date.now();
+  if(message===lastNotifiedText&&now-lastNotifiedAt<8000)return;
+  lastNotifiedText=message;lastNotifiedAt=now;
+  try{
+    var reg=notificationRegistration||await navigator.serviceWorker.ready;
+    await reg.showNotification('מפעל האפליקציות', {
+      body:String(message).slice(0,220),
+      icon:'./notification-icon.svg',
+      badge:'./notification-icon.svg',
+      tag:'app-factory-'+Math.floor(now/5000),
+      data:{url:location.href},
+      renotify:false
+    });
+  }catch(e){
+    // Notifications are optional; do not interrupt code generation if the browser blocks one.
+  }
+}
 function ser(f){return Object.keys(f).map(function(k){return '=====FILE: '+k+'=====\n'+f[k]}).join('\n')}
 
 function parse(t){
@@ -497,6 +599,7 @@ async function startInterview(){
     $('chatlog').textContent='Gemini חושב על שאלות ההבהרה…';
     var response=await askR(INTERVIEW_SYS,'תיאור ראשוני של הבקשה:\n'+desc+'\n\nקרא גם את הקבצים המצורפים, אם ישנם. שאל את השאלות החשובות ביותר לפני כתיבת קוד.',true);
     interviewHistory.push({role:'assistant',text:response});renderInterview();
+    showProgressNotification('Gemini סיים סבב שאלות לתכנון. פתח את האתר כדי לענות.');
     $('chatreply').focus();
   }catch(e){$('chatlog').textContent='לא הצלחתי להתחיל שיחה: '+(e.message||e)}
   finally{interviewBusy=false;$('startInterview').disabled=false;$('sendReply').disabled=false;$('mergeInterview').disabled=false}
@@ -511,6 +614,7 @@ async function sendInterviewReply(){
     var transcript=interviewHistory.map(function(m){return (m.role==='assistant'?'Gemini':'המשתמש')+':\n'+m.text}).join('\n\n');
     var response=await askR(INTERVIEW_SYS,'המשך את שיחת תכנון האפליקציה לפי ההיסטוריה הבאה. שאל רק שאלות שעדיין חסרות, או סכם את הדרישות אם המשתמש מוכן להתקדם.\n\n'+transcript,true);
     interviewHistory.push({role:'assistant',text:response});renderInterview();
+    showProgressNotification('Gemini השיב בשיחת התכנון. אפשר להמשיך לענות.');
   }catch(e){
     interviewHistory.push({role:'assistant',text:'אירעה שגיאה: '+(e.message||e)+' . אפשר לשלוח שוב את התשובה.'});renderInterview();
   }finally{interviewBusy=false;$('sendReply').disabled=false;$('mergeInterview').disabled=false;$('startInterview').disabled=false}
@@ -630,6 +734,8 @@ $('mode').addEventListener('change',applyMode);applyMode();
 $('prov').addEventListener('change',applyProv);applyProv();
 $('help').addEventListener('click',function(){var b=$('helpbox');b.hidden=!b.hidden;$('help').setAttribute('aria-expanded',String(!b.hidden))});
 $('go').addEventListener('click',main);
+$('notifyToggle').addEventListener('click',toggleNotifications);
+initNotifications();
 $('refreshModels').addEventListener('click',function(){lastModelsKey='';refreshModels(false)});
 $('ai').addEventListener('blur',function(){if($('ai').value.trim()&&$('ai').value.trim()!==lastModelsKey)refreshModels(true)});
 $('attachments').addEventListener('change',function(){
