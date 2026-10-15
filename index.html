@@ -75,7 +75,17 @@ button.sec:hover{background:rgba(127,214,255,.1);transform:none;box-shadow:none}
 #result a:nth-child(n+2){background:transparent;color:var(--cy);border:1px dashed var(--cy);animation:pop .7s .15s cubic-bezier(.3,1.6,.5,1) both;font-size:16px}
 @keyframes pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
 @keyframes glow{50%{box-shadow:0 0 0 10px rgba(126,224,168,.0),0 0 28px rgba(126,224,168,.55)}}
-@media(max-width:480px){.row{flex-direction:column;gap:0}h1{font-size:28px}}
+.interview{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:12px;background:rgba(4,15,30,.58)}
+#chatlog{display:flex;flex-direction:column;gap:10px;margin:12px 0}
+#chatlog .chat-msg{white-space:pre-wrap;overflow-wrap:anywhere;padding:11px 13px;border-radius:10px;line-height:1.6}
+#chatlog .chat-msg.ai{background:rgba(127,214,255,.1);border:1px solid var(--line)}
+#chatlog .chat-msg.user{background:rgba(255,209,102,.12);border:1px solid rgba(255,209,102,.35)}
+#chatlog .chat-msg b{display:block;color:var(--cy);margin-bottom:3px}
+#attachments{padding:9px;background:rgba(255,255,255,.035)}
+#refreshModels{margin-top:8px}
+.chat-actions{align-items:stretch}
+.chat-actions button{height:calc(100% - 20px);font-size:14px}
+@media(max-width:480px){.row{flex-direction:column;gap:0}h1{font-size:28px}.chat-actions button{height:auto}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -103,10 +113,36 @@ button.sec:hover{background:rgba(127,214,255,.1);transform:none;box-shadow:none}
 <div id="repowrap" hidden><label for="repo">הריפו לשדרוג</label><input id="repo" dir="ltr" placeholder="user/app-name או קישור לריפו"><p class="hint">אחרי כל בנייה השדה מתמלא אוטומטית בריפו האחרון. האתר מזהה לבד אם זו אפליקציית אנדרואיד או אתר.</p></div>
 <div class="row">
 <div id="typewrap"><label for="type">סוג</label><select id="type"><option value="android">אפליקציית אנדרואיד (APK)</option><option value="web">אתר</option></select></div>
-<div><label for="model">שם המודל</label><input id="model" list="models"><datalist id="models"><option value="gemini-flash-latest"><option value="gemini-3.5-flash"><option value="gemini-2.5-flash"></datalist></div>
+<div><label for="model">בחירת מודל Gemini</label><select id="model">
+<option value="gemini-flash-latest">Gemini Flash Latest — ברירת מחדל</option>
+<option value="gemini-4-argon">Gemini 4 Argon</option>
+<option value="gemini-3.8-flash">Gemini 3.8 Flash</option>
+<option value="gemini-3.7-flash">Gemini 3.7 Flash</option>
+<option value="gemini-3.6-flash">Gemini 3.6 Flash</option>
+<option value="gemini-3.5-flash">Gemini 3.5 Flash</option>
+<option value="gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite</option>
+<option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+<option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+</select>
+<button type="button" id="refreshModels" class="sec">רענן את רשימת המודלים</button>
+<p class="hint" id="modelstatus">הזן מפתח Gemini ולחץ על רענון כדי לקבל את כל המודלים הזמינים למפתח שלך.</p></div>
 </div>
 <label for="desc" id="desclab">מה לבנות?</label>
 <textarea id="desc" placeholder="למשל: מחשבון טיפים עם חלוקה בין חברים"></textarea>
+<label for="attachments">קבצים מצורפים לבנייה (תמונות, PDF, טקסט וקוד)</label>
+<input id="attachments" type="file" multiple accept="image/png,image/jpeg,image/webp,image/bmp,application/pdf,text/plain,text/markdown,text/csv,application/json,text/html,text/css,text/javascript,.txt,.md,.java,.js,.css,.html,.json,.xml,.gradle,.py">
+<p class="hint" id="attachmentstatus">אפשר לצרף עד 5 קבצים; קבצים נתמכים יישלחו ל-Gemini יחד עם התיאור.</p>
+<button type="button" id="startInterview" class="sec">Gemini, שאל אותי שאלות לפני הבנייה</button>
+<section id="interview" class="interview" hidden aria-live="polite">
+  <p class="hint">אפשר לענות בעברית, לבקש שינוי כיוון או להוסיף דרישות. השיחה תשולב בדרישות לבנייה רק כשתבחרו בכך.</p>
+  <div id="chatlog"></div>
+  <label for="chatreply">התשובה שלך</label>
+  <textarea id="chatreply" rows="3" placeholder="כתוב תשובה או הוסף פרטים..."></textarea>
+  <div class="row chat-actions">
+    <div><button type="button" id="sendReply" class="sec">שלח תשובה והמשך</button></div>
+    <div><button type="button" id="mergeInterview" class="sec">סיימתי — שלב את השיחה בדרישות</button></div>
+  </div>
+</section>
 <label for="tries">מספר ניסיונות תיקון אוטומטי (אנדרואיד)</label>
 <input id="tries" type="number" min="1" max="8" value="5">
 <label class="chk"><input id="rem" type="checkbox">זכור את המפתחות במכשיר הזה</label>
@@ -121,7 +157,10 @@ button.sec:hover{background:rgba(127,214,255,.1);transform:none;box-shadow:none}
 var $=function(id){return document.getElementById(id)};
 var sleep=function(ms){return new Promise(function(r){setTimeout(r,ms)})};
 var aiKey='',ghTok='',model='',prov='gemini',known=[];
-var PV={gemini:{lab:'מפתח API של Gemini',link:'https://aistudio.google.com/apikey',note:'(חינמי, בלי כרטיס אשראי. במסלול החינמי גוגל עשויה להשתמש בתוכן לשיפור המודלים)',model:'gemini-flash-latest',ph:'AIza...'}};
+var requestAttachmentParts=[],requestAttachmentText='',attachmentSignature='';
+var interviewHistory=[],interviewBusy=false,interviewMerged=false,lastModelsKey='';
+var INTERVIEW_SYS='אתה יועץ מוצר ומנתח דרישות מנוסה, שעוזר למשתמש לתכנן אפליקציה או אתר לפני כתיבת הקוד. דבר בעברית ברורה. שאל רק שאלות הבהרה מעשיות וחשובות, רצוי 2–5 בכל סבב, על מטרת המוצר, המשתמשים, המסכים, הפעולות, העיצוב והפלטפורמה. התייחס לתיאור המקורי, לתשובות שכבר ניתנו ולתמונות/קבצים המצורפים. אל תשאל שוב שאלה שכבר נענתה ואל תכתוב קוד בשלב הזה. אם המשתמש מבקש להתקדם או שאין עוד שאלות מהותיות, כתוב סיכום קצר וברור של הדרישות והנחות העבודה והסבר שאפשר ללחוץ על הכפתור לשילוב השיחה בדרישות. אל תציג את הסיכום כאילו המשתמש אישר פרטים שלא אמר.';
+var PV={gemini:{lab:'מפתח API של Gemini',link:'https://aistudio.google.com/apikey',note:'(תנאי השימוש, המגבלות והעלות תלויים במודל ובהגדרות חשבון Google)',model:'gemini-flash-latest',ph:'AIza...'}};
 function applyProv(){var v=PV[$('prov').value];$('ailab').textContent=v.lab;$('ailink').href=v.link;$('aihint').textContent=v.note;$('ai').placeholder=v.ph;$('model').value=v.model}
 
 var WF=['name: Build','on: [push]','permissions:','  contents: write','  issues: write','jobs:','  build:','    runs-on: ubuntu-latest','    steps:',
@@ -194,12 +233,17 @@ function check(files,type){
   return p;
 }
 
-async function ask(system,user){
+async function ask(system,user,withFiles){
+  var parts=[{text:user}];
+  if(withFiles){
+    if(requestAttachmentText)parts[0].text+='\n\nקבצים מצורפים מסוג טקסט/קוד (תוכן מלא):\n'+requestAttachmentText;
+    requestAttachmentParts.forEach(function(p){parts.push(p)});
+  }
   var r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':streamGenerateContent?alt=sse',{method:'POST',headers:{'content-type':'application/json','x-goog-api-key':aiKey},
-    body:JSON.stringify({systemInstruction:{parts:[{text:system}]},contents:[{role:'user',parts:[{text:user}]}],generationConfig:{maxOutputTokens:32000}})});
+    body:JSON.stringify({systemInstruction:{parts:[{text:system}]},contents:[{role:'user',parts:parts}],generationConfig:{maxOutputTokens:32000}})});
   if(!r.ok){
     var tx=await r.text();
-    var hint=r.status===429?' (הגעת למגבלת השימוש. חכה דקה ונסה שוב)':(r.status===404?' (שם המודל לא קיים. נסה gemini-flash-latest)':'');
+    var hint=r.status===429?' (הגעת למגבלת השימוש. חכה דקה ונסה שוב)':(r.status===404?' (שם המודל לא קיים או אינו זמין למפתח הזה)':'');
     var er=new Error('Gemini '+r.status+hint+': '+tx.slice(0,300));er.status=r.status;throw er;
   }
   var rd=r.body.getReader(),dec=new TextDecoder(),buf='',out='',stop='';
@@ -213,11 +257,11 @@ async function ask(system,user){
       var dt=line.slice(5).trim();if(!dt||dt==='[DONE]')continue;
       var j;try{j=JSON.parse(dt)}catch(e){continue}
       if(j.error)throw new Error('Gemini: '+(j.error.message||'stream error'));
-      var c=j.candidates&&j.candidates[0];
-      if(c){
-        var ps=(c.content&&c.content.parts)||[];
+      var cand=j.candidates&&j.candidates[0];
+      if(cand){
+        var ps=(cand.content&&cand.content.parts)||[];
         ps.forEach(function(p){if(p.text&&!p.thought)out+=p.text});
-        if(c.finishReason==='MAX_TOKENS')stop='max_tokens';
+        if(cand.finishReason==='MAX_TOKENS')stop='max_tokens';
       }
     }
   }
@@ -225,9 +269,9 @@ async function ask(system,user){
   if(!out)throw new Error('המודל לא החזיר תשובה');
   return out;
 }
-async function askR(s,u){
+async function askR(s,u,withFiles){
   for(var i=0;;i++){
-    try{return await ask(s,u)}
+    try{return await ask(s,u,withFiles)}
     catch(e){if(e.status===429&&i<3){log('מגבלת שימוש אצל הספק. ממתין 40 שניות ומנסה שוב…','w');await sleep(40000)}else throw e}
   }
 }
@@ -351,6 +395,136 @@ function fixMsg(desc,files,problems){
   return 'Original request:\n'+desc+'\n\nCurrent files:\n'+ser(files)+'\n\nPROBLEMS / BUILD LOG:\n'+problems+'\n\nFix every error. Output ONLY the files that change, each complete, in the same format (omit the NAME line).';
 }
 
+
+// Populate the model dropdown from the models actually exposed by this Gemini API key.
+async function refreshModels(silent){
+  aiKey=$('ai').value.trim();
+  var status=$('modelstatus');
+  if(!aiKey){status.textContent='הזן מפתח Gemini כדי לטעון את המודלים הזמינים למפתח שלך.';return}
+  if(lastModelsKey===aiKey&&silent)return;
+  var wanted=$('model').value||'gemini-flash-latest';
+  status.textContent='טוען את רשימת המודלים הזמינים…';
+  $('refreshModels').disabled=true;
+  try{
+    var token='',items=[],pages=0;
+    do{
+      var url='https://generativelanguage.googleapis.com/v1beta/models?pageSize=100';
+      if(token)url+='&pageToken='+encodeURIComponent(token);
+      var response=await fetch(url,{headers:{'x-goog-api-key':aiKey}});
+      if(!response.ok){var detail=await response.text();throw new Error('Google API '+response.status+': '+detail.slice(0,180))}
+      var data=await response.json();
+      (data.models||[]).forEach(function(m){
+        var id=String(m.name||'').replace('models/','');
+        var methods=m.supportedGenerationMethods||[];
+        if(id&&id.indexOf('gemini-')===0&&methods.indexOf('generateContent')>=0&&!/(embedding|tts|image|veo|robotics)/i.test(id)){
+          if(!items.some(function(x){return x.id===id}))items.push({id:id,label:(m.displayName||id)+' — '+id});
+        }
+      });
+      token=data.nextPageToken||'';pages++;
+    }while(token&&pages<10);
+    if(!items.length)throw new Error('Google לא החזירה מודלים התומכים ב-generateContent למפתח הזה.');
+    items.sort(function(a,b){return a.id.localeCompare(b.id)});
+    var sel=$('model');sel.textContent='';
+    items.forEach(function(it){var opt=document.createElement('option');opt.value=it.id;opt.textContent=it.label;sel.appendChild(opt)});
+    var preferred=items.some(function(x){return x.id===wanted})?wanted:(items.some(function(x){return x.id==='gemini-flash-latest'})?'gemini-flash-latest':items[0].id);
+    sel.value=preferred;lastModelsKey=aiKey;
+    status.textContent='נטענו '+items.length+' מודלים זמינים ממפתח Gemini שלך. בחר מהרשימה — אין צורך להקליד שם מודל.';
+  }catch(e){
+    status.textContent='לא הצלחתי לטעון את הרשימה החיה: '+(e.message||e)+'. אפשר לבחור מודל מהרשימה הקיימת או לבדוק את המפתח.';
+  }finally{$('refreshModels').disabled=false}
+}
+function readDataUrl(file){
+  return new Promise(function(resolve,reject){
+    var reader=new FileReader();
+    reader.onload=function(){resolve(String(reader.result||''))};
+    reader.onerror=function(){reject(new Error('לא הצלחתי לקרוא את הקובץ '+file.name))};
+    reader.readAsDataURL(file);
+  });
+}
+async function prepareAttachments(){
+  var selected=Array.prototype.slice.call($('attachments').files||[]);
+  if(!selected.length){requestAttachmentParts=[];requestAttachmentText='';attachmentSignature='';$('attachmentstatus').textContent='לא צורפו קבצים.';return}
+  if(selected.length>5)throw new Error('אפשר לצרף עד 5 קבצים בכל פעם.');
+  var signature=selected.map(function(f){return f.name+':'+f.size+':'+f.lastModified}).join('|');
+  if(signature===attachmentSignature)return;
+  var total=selected.reduce(function(n,f){return n+f.size},0);
+  if(total>15*1024*1024)throw new Error('סך הקבצים מוגבל ל-15MB כדי למנוע בקשה גדולה מדי ל-Gemini.');
+  var binary=[],texts=[],textTotal=0;
+  for(var i=0;i<selected.length;i++){
+    var f=selected[i],mime=f.type||'',ext=(f.name.split('.').pop()||'').toLowerCase();
+    if(f.size===0)throw new Error('הקובץ '+f.name+' ריק.');
+    var isImage=['image/png','image/jpeg','image/webp','image/bmp'].indexOf(mime)>=0;
+    var isPdf=mime==='application/pdf'||ext==='pdf';
+    var isText=mime.indexOf('text/')===0||['json','xml','md','txt','java','js','css','html','gradle','py','csv','kt','properties','yaml','yml'].indexOf(ext)>=0||mime==='application/json';
+    if(isImage||isPdf){
+      if(f.size>10*1024*1024)throw new Error('הקובץ '+f.name+' גדול מדי. תמונות ו-PDF מוגבלים ל-10MB כל אחד.');
+      var dataUrl=await readDataUrl(f),comma=dataUrl.indexOf(',');
+      if(comma<0)throw new Error('לא הצלחתי לקרוא את הקובץ '+f.name);
+      var actualMime=mime||(isPdf?'application/pdf':'image/jpeg');
+      binary.push({inlineData:{mimeType:actualMime,data:dataUrl.slice(comma+1)}});
+    }else if(isText){
+      if(f.size>1024*1024)throw new Error('קובץ הטקסט/קוד '+f.name+' גדול מדי (עד 1MB).');
+      textTotal+=f.size;if(textTotal>4*1024*1024)throw new Error('סך קובצי הטקסט מוגבל ל-4MB.');
+      texts.push('===== ATTACHMENT: '+f.name+' =====\n'+await f.text());
+    }else{
+      throw new Error('סוג הקובץ '+f.name+' אינו נתמך. אפשר לצרף תמונות PNG/JPEG/WEBP/BMP, PDF או קובצי טקסט וקוד.');
+    }
+  }
+  requestAttachmentParts=binary;
+  requestAttachmentText=texts.join('\n\n');
+  attachmentSignature=signature;
+  $('attachmentstatus').textContent='מוכנים '+selected.length+' קבצים לשליחה ל-Gemini ('+(total/1024/1024).toFixed(2)+'MB). התמונות וה-PDF נשלחים כקובץ, וקובצי הטקסט/קוד נקראים לתוך ההוראה.';
+}
+function renderInterview(){
+  var el=$('chatlog');el.textContent='';
+  interviewHistory.forEach(function(item){
+    var box=document.createElement('div');box.className='chat-msg '+(item.role==='assistant'?'ai':'user');
+    var title=document.createElement('b');title.textContent=item.role==='assistant'?'Gemini':'אתה';
+    var body=document.createElement('div');body.textContent=item.text;
+    box.appendChild(title);box.appendChild(body);el.appendChild(box);
+  });
+  el.scrollTop=el.scrollHeight;
+}
+async function startInterview(){
+  if(interviewBusy)return;
+  aiKey=$('ai').value.trim();model=$('model').value;
+  var desc=$('desc').value.trim();
+  if(!aiKey||!model||!desc){log('כדי להתחיל שיחת תכנון, צריך מפתח Gemini, מודל ותיאור ראשוני של האפליקציה.','e');return}
+  interviewBusy=true;$('startInterview').disabled=true;$('sendReply').disabled=true;$('mergeInterview').disabled=true;
+  $('interview').hidden=false;$('chatlog').textContent='';interviewHistory=[];interviewMerged=false;
+  try{
+    await prepareAttachments();
+    $('chatlog').textContent='Gemini חושב על שאלות ההבהרה…';
+    var response=await askR(INTERVIEW_SYS,'תיאור ראשוני של הבקשה:\n'+desc+'\n\nקרא גם את הקבצים המצורפים, אם ישנם. שאל את השאלות החשובות ביותר לפני כתיבת קוד.',true);
+    interviewHistory.push({role:'assistant',text:response});renderInterview();
+    $('chatreply').focus();
+  }catch(e){$('chatlog').textContent='לא הצלחתי להתחיל שיחה: '+(e.message||e)}
+  finally{interviewBusy=false;$('startInterview').disabled=false;$('sendReply').disabled=false;$('mergeInterview').disabled=false}
+}
+async function sendInterviewReply(){
+  if(interviewBusy||!interviewHistory.length)return;
+  var reply=$('chatreply').value.trim();
+  if(!reply)return;
+  interviewHistory.push({role:'user',text:reply});$('chatreply').value='';renderInterview();
+  interviewBusy=true;$('sendReply').disabled=true;$('mergeInterview').disabled=true;$('startInterview').disabled=true;
+  try{
+    var transcript=interviewHistory.map(function(m){return (m.role==='assistant'?'Gemini':'המשתמש')+':\n'+m.text}).join('\n\n');
+    var response=await askR(INTERVIEW_SYS,'המשך את שיחת תכנון האפליקציה לפי ההיסטוריה הבאה. שאל רק שאלות שעדיין חסרות, או סכם את הדרישות אם המשתמש מוכן להתקדם.\n\n'+transcript,true);
+    interviewHistory.push({role:'assistant',text:response});renderInterview();
+  }catch(e){
+    interviewHistory.push({role:'assistant',text:'אירעה שגיאה: '+(e.message||e)+' . אפשר לשלוח שוב את התשובה.'});renderInterview();
+  }finally{interviewBusy=false;$('sendReply').disabled=false;$('mergeInterview').disabled=false;$('startInterview').disabled=false}
+}
+function mergeInterview(){
+  if(!interviewHistory.length){log('התחל קודם שיחת תכנון עם Gemini.','w');return}
+  if(interviewMerged){$('interview').hidden=true;return}
+  var transcript=interviewHistory.map(function(m){return (m.role==='assistant'?'Gemini':'תשובת המשתמש')+':\n'+m.text}).join('\n\n');
+  $('desc').value=$('desc').value.trim()+'\n\nהבהרות ותכנון משיחת Gemini (יש לשמר את ההנחיות המקוריות וליישם את התשובות):\n'+transcript;
+  interviewMerged=true;$('interview').hidden=true;
+  $('attachmentstatus').textContent='השיחה עם Gemini שולבה בתיאור. בדוק את הדרישות ואז לחץ על „בנה לי”.';
+  $('desc').focus();
+}
+
 async function main(){
   var up=$('mode').value==='up',type=$('type').value,desc=$('desc').value.trim(),repoIn=$('repo').value.trim();
   prov=$('prov').value;aiKey=$('ai').value.trim();ghTok=$('gh').value.trim();model=$('model').value.trim();
@@ -359,6 +533,7 @@ async function main(){
   try{if($('rem').checked){localStorage.setItem('af_ai',aiKey);localStorage.setItem('af_gh',ghTok)}else{localStorage.removeItem('af_ai');localStorage.removeItem('af_gh')}}catch(e){}
   $('go').disabled=true;$('app').classList.add('busy');$('log').textContent='';$('result').textContent='';
   try{
+    await prepareAttachments();
     log('בודק את האסימון של גיטהב…');
     var me=await gh('/user'),repo,branch,name,files,all,paths,touched={};
     known=[];
@@ -371,12 +546,12 @@ async function main(){
       if(!fc)throw new Error('לא נמצאו קבצי קוד בריפו');
       if(type==='android'&&!files['app/src/main/AndroidManifest.xml'])throw new Error('זה לא ריפו אנדרואיד שנוצר כאן');
       log('נטענו '+fc+' קבצים ('+(type==='android'?'אנדרואיד':'אתר')+'). המודל משדרג…');
-      var chg=clean(parse(await askR(SYS[type],upMsg(desc,files))).files,type);
+      var chg=clean(parse(await askR(SYS[type],upMsg(desc,files),true)).files,type);
       if(!Object.keys(chg).length)throw new Error('המודל לא החזיר שינויים');
       Object.assign(files,chg);Object.keys(chg).forEach(function(k){touched[k]=1});
     }else{
       log('המודל כותב את הקוד (זה לוקח כמה דקות)…');
-      var res=parse(await askR(SYS[type],'Request:\n'+desc));
+      var res=parse(await askR(SYS[type],'Request:\n'+desc,true));
       files=clean(res.files,type);name=res.name;
     }
     for(var i=0;i<3;i++){
@@ -455,6 +630,17 @@ $('mode').addEventListener('change',applyMode);applyMode();
 $('prov').addEventListener('change',applyProv);applyProv();
 $('help').addEventListener('click',function(){var b=$('helpbox');b.hidden=!b.hidden;$('help').setAttribute('aria-expanded',String(!b.hidden))});
 $('go').addEventListener('click',main);
+$('refreshModels').addEventListener('click',function(){lastModelsKey='';refreshModels(false)});
+$('ai').addEventListener('blur',function(){if($('ai').value.trim()&&$('ai').value.trim()!==lastModelsKey)refreshModels(true)});
+$('attachments').addEventListener('change',function(){
+  attachmentSignature='';requestAttachmentParts=[];requestAttachmentText='';
+  var files=Array.prototype.slice.call($('attachments').files||[]);
+  $('attachmentstatus').textContent=files.length?('נבחרו '+files.length+' קבצים: '+files.map(function(f){return f.name}).join(', ')):'לא צורפו קבצים.';
+});
+$('startInterview').addEventListener('click',startInterview);
+$('sendReply').addEventListener('click',sendInterviewReply);
+$('mergeInterview').addEventListener('click',mergeInterview);
+if($('ai').value)refreshModels(true);
 })();
 </script>
 </body>
